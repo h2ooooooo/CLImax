@@ -9,7 +9,7 @@ namespace CLImax;
 
 /**
  * @property \CLImax\Size $size A size object defining the size of the CLI prompt
- * @property \CLImax\Defaults\Defaults $defaults A Defaults object defining the defaults
+ * @property \CLImax\Defaults $defaults A Defaults object defining the defaults
  * @property \CLImax\Event\Events $events A Events object used to handle events
  * @property \CLImax\Question $question A Question object used to ask questions
  * @property \CLImax\Fullscreen $fullscreen A Fullscreen object used to run fullscreen applications

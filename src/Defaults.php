@@ -5,7 +5,7 @@
  * @website http://www.jalsoedesign.net
  */
 
-namespace CLImax\Defaults;
+namespace CLImax;
 
 use CLImax\Application;
 use CLImax\DebugLevel;
