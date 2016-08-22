@@ -62,9 +62,10 @@ class Events extends Module {
 		if ( ! isset( $this->events[ $identifier ] ) ) {
 			if ( $intervalType === IntervalType::MILLISECONDS ) {
 				$intervalMicroseconds = $interval * 1000;
-			} else if ( $intervalType === IntervalType::MILLISECONDS ) {
-				$intervalMicroseconds = $interval * 1000;
+			} else {
+				$intervalMicroseconds = $interval;
 			}
+
 			$this->events[ $identifier ] = new Event( $this, $identifier, $callback, $intervalMicroseconds);
 
 			return $identifier;
@@ -106,70 +107,11 @@ class Events extends Module {
      */
 	public function removeAll() {
 		foreach ( $this->events as $identifier => $event ) {
-			if ( ! $this->Remove( $identifier ) ) {
+			if ( ! $this->remove( $identifier ) ) {
 				return false;
 			}
 		}
 
 		return true;
 	}
-}
-
-/**
- * Class Event
- * @package CLImax\Event
- */
-class Event {
-	private $events;
-
-	private $identifier;
-
-	private $callback;
-
-	private $intervalMicroseconds;
-
-	public $nextRun = null;
-
-	/**
-	 * Event constructor.
-	 *
-	 * @param $events
-	 * @param $identifier
-	 * @param $callback
-	 * @param $intervalMicroseconds
-     */
-    public function __construct( &$events, $identifier, $callback, $intervalMicroseconds ) {
-		$this->events     = $events;
-		$this->identifier = $identifier;
-		$this->callback   = $callback;
-		$this->intervalMicroseconds = $intervalMicroseconds;
-
-		$this->RecalculateNextRun();
-	}
-
-	public function __destruct() {
-		//Do whatever
-	}
-
-	public function run() {
-	}
-
-	private function recalculateNextRun() {
-		$this->nextRun = microtime( true ) + $this->intervalMicroseconds;
-	}
-}
-
-/**
- * Class IntervalType
- * @package CLImax\Event
- */
-class IntervalType {
-	const MILLISECONDS = 1;
-	const SECONDS = 2;
-	const MINUTES = 3;
-	const HOURS = 4;
-	const DAYS = 5;
-	const WEEKS = 6;
-	const MONTHS = 7;
-	const YEARS = 8;
 }

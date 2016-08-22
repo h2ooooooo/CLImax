@@ -155,7 +155,7 @@ class DebugColour {
 	 * @param int  $textColour
 	 * @param int  $backgroundColour
 	 * @param null $textStyle
-	 * @param bool $reset
+	 * @param callable|bool $reset
 	 *
 	 * @return string
      */

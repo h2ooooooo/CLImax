@@ -8,17 +8,18 @@
 namespace CLImax;
 
 /**
- * @property \CLImax\Size $size A size object defining the size of the CLI prompt
- * @property \CLImax\Defaults $defaults A Defaults object defining the defaults
- * @property \CLImax\Event\Events $events A Events object used to handle events
- * @property \CLImax\Question $question A Question object used to ask questions
- * @property \CLImax\Fullscreen $fullscreen A Fullscreen object used to run fullscreen applications
- * @property \CLImax\Progress $progress A Progress object used to show progress
- * @property \CLImax\Clear $clear A Clear object used to clear text and set cursor position
- * @property \CLImax\OS $os An OS object used to figure out what OS we're running
- * @property \CLImax\STD $std A standard object used for communicating with STDIN, STDOUT and STDERR
- * @property \CLImax\Cursor $cursor A cursor object to manipulate the cursor position
- * @property \CLImax\Scroll $scroll A scroll object to manipulate the scroll bar position
+ * @property \CLImax\Size                     $size        A size object defining the size of the CLI prompt
+ * @property \CLImax\Environments\Environment $environment The currently chosen environment
+ * @property \CLImax\Event\Events             $events      A Events object used to handle events
+ * @property \CLImax\Question                 $question    A Question object used to ask questions
+ * @property \CLImax\Fullscreen               $fullscreen  A Fullscreen object used to run fullscreen applications
+ * @property \CLImax\Progress                 $progress    A Progress object used to show progress
+ * @property \CLImax\Clear                    $clear       A Clear object used to clear text and set cursor position
+ * @property \CLImax\OS                       $os          An OS object used to figure out what OS we're running
+ * @property \CLImax\STD                      $std         A standard object used for communicating with STDIN, STDOUT
+ *           and STDERR
+ * @property \CLImax\Cursor                   $cursor      A cursor object to manipulate the cursor position
+ * @property \CLImax\Scroll                   $scroll      A scroll object to manipulate the scroll bar position
  */
 abstract class Application
 {
@@ -28,7 +29,8 @@ abstract class Application
     public static $showPaddingBanners = true;
 
     /**
-     * @var bool Whether or not to disable the message padding making sure that new lines are padded in the same way as the first one
+     * @var bool Whether or not to disable the message padding making sure that new lines are padded in the same way as
+     *      the first one
      */
     public static $disableMessagePadding = false;
 
@@ -82,11 +84,11 @@ abstract class Application
         /**
          * string 'defaults' A Defaults object defining the defaults
          */
-        'defaults'   => 'Defaults',
+        'environment'   => 'Environment\Environment',
         /**
          * string 'events' A Events object used to handle events
          */
-        'events'     => 'Events',
+        'events'     => 'Event\Events',
         /**
          * string 'question' A Question object used to ask questions
          */
@@ -110,15 +112,15 @@ abstract class Application
         /**
          * string 'std' A standard object used for communicating with STDIN, STDOUT and STDERR
          */
-        'std'         => 'STD',
+        'std'        => 'STD',
         /**
          * string 'cursor' A cursor object to manipulate the cursor position
          */
-        'cursor'         => 'Cursor',
+        'cursor'     => 'Cursor',
         /**
          * string 'scroll' A scroll object to manipulate the scroll bar position
          */
-        'scroll'         => 'Scroll',
+        'scroll'     => 'Scroll',
     );
 
     /**
@@ -132,19 +134,20 @@ abstract class Application
     protected static $instances = [];
 
     /**
-     * @param int $debugLevel Which debug level to start the script on - if null, it will default to
-     *     $defaults->debugLevel.
-     * @param string $environment One of the environments from the Environment class
+     * @param int        $debugLevel       Which debug level to start the script on - if null, it will default to
+     *                                     $defaults->debugLevel.
+     * @param string     $environmentClass One of the environments from the Environment class
      * @param array|null $defaultsOverride An array to specify what defaults should be overwritten compared to the
-     *     environment you're in
+     *                                     environment you're in
      *
      * @return $this
      */
-    public static function instance($debugLevel = null, $environment = Environment::PRODUCTION, $defaultsOverride = null) {
+    public static function instance($debugLevel = null, $environmentClass = null, $defaultsOverride = null)
+    {
         $class = get_called_class();
 
         if (!isset(static::$instances[$class])) {
-            static::launch();
+            static::launch($debugLevel, $environmentClass, $defaultsOverride);
         }
 
         return static::$instances[$class];
@@ -155,19 +158,19 @@ abstract class Application
      * time of the script so we can check how long the entire
      * application took to run, when it dies (see __destruct())
      *
-     * @param int $debugLevel Which debug level to start the script on - if null, it will default to
-     *     $defaults->debugLevel.
-     * @param string $environment One of the environments from the Environment class
+     * @param int        $debugLevel       Which debug level to start the script on - if null, it will default to
+     *                                     $defaults->debugLevel.
+     * @param string     $environmentClass One of the environments from the Environment class
      * @param array|null $defaultsOverride An array to specify what defaults should be overwritten compared to the
-     *     environment you're in
+     *                                     environment you're in
      *
      * @throws \\Exception Throws an exception if we're not in a CLI app
      */
-    public static function launch($debugLevel = null, $environment = Environment::PRODUCTION, $defaultsOverride = null)
+    public static function launch($debugLevel = null, $environmentClass = null, $defaultsOverride = null)
     {
         $class = get_called_class();
 
-        $application = new $class($debugLevel, $environment, $defaultsOverride);
+        $application = new $class($debugLevel, $environmentClass, $defaultsOverride);
 
         static::$instances[$class] = $application;
 
@@ -181,30 +184,30 @@ abstract class Application
      * time of the script so we can check how long the entire
      * application took to run, when it dies (see __destruct())
      *
-     * @param int $debugLevel Which debug level to start the script on - if null, it will default to
-     *     $defaults->debugLevel.
-     * @param string $environment One of the environments from the Environment class
+     * @param int        $debugLevel       Which debug level to start the script on - if null, it will default to
+     *                                     $defaults->debugLevel.
+     * @param string     $environmentClass One of the environments from the Environment class
      * @param array|null $defaultsOverride An array to specify what defaults should be overwritten compared to the
-     *     environment you're in
+     *                                     environment you're in
      *
      * @throws \Exception Throws an exception if we're not in a CLI app
      */
     public function __construct(
         $debugLevel = null,
-        $environment = Environment::PRODUCTION,
+        $environmentClass = null,
         $defaultsOverride = null
     ) {
         if (!defined('STDIN')) {
             throw new \Exception('CLImax\Application\'s can only run in a command line using PHP-CLI');
         }
 
-        $this->setEnvironment($environment);
+        $this->setEnvironment($environmentClass);
 
         if ($defaultsOverride !== null) {
-            $this->defaults->setKVP($defaultsOverride);
+            $this->environment->setKVP($defaultsOverride);
         }
 
-        $this->setDebugLevel($debugLevel !== null ? $debugLevel : $this->defaults->debugLevel);
+        $this->setDebugLevel($debugLevel !== null ? $debugLevel : $this->environment->debugLevel);
 
         //Parse arguments
         if ($_SERVER['argc'] > 1) {
@@ -235,7 +238,8 @@ abstract class Application
         }
     }
 
-    public function doInit() {
+    public function doInit()
+    {
         if (!$this->initialized) {
             try {
                 $returnCode = $this->init();
@@ -342,23 +346,25 @@ abstract class Application
      * Sets the defaults to relate to the specified environment
      * Warning: This will reset all custom set defaults
      *
-     * @param string $environment An environment from 'Environment'
+     * @param string $environmentClass A class extending Environments\Environment
      *
      * @return bool Whether the call was OK or not
      */
-    public function setEnvironment($environment = Environment::PRODUCTION)
+    public function setEnvironment($environmentClass)
     {
-        $defaultsClass = '\\CLImax\\Defaults\\' . $environment;
+        if (empty($environmentClass)) {
+            $environmentClass = \CLImax\Environments\Production::className();
+        }
 
-        if (class_exists($defaultsClass)) {
-            $this->defaults = new $defaultsClass($this);
-
-            return true;
-        } else {
-            $this->fatal('Could not set environment to ' . $environment . ' as it does not exist');
+        if (!class_exists($environmentClass)) {
+            $this->fatal(sprintf('Could not find environment class "%s"', $environmentClass));
 
             return false;
         }
+
+        $this->environment = new $environmentClass($this);
+
+        return true;
     }
 
     /**
@@ -375,14 +381,14 @@ abstract class Application
      * Is used to print a full line message (according to the CLI prompt columns).
      * Note that this message will ALWAYS be output, unless $debugLevel is changed
      *
-     * @param string $message The message to be printed in the middle
-     * @param int $colour The colour of the text, null is default
-     * @param int $backgroundColour The colour of the background of the text, null is default
-     * @param int $debugLevel The debug level from DebugLevel
-     * @param boolean $addBrackets Whether or not to add [ and ]'s to the string
-     * @param string $padString The string to pad the message towards the center with
+     * @param string  $message          The message to be printed in the middle
+     * @param int     $colour           The colour of the text, null is default
+     * @param int     $backgroundColour The colour of the background of the text, null is default
+     * @param int     $debugLevel       The debug level from DebugLevel
+     * @param boolean $addBrackets      Whether or not to add [ and ]'s to the string
+     * @param string  $padString        The string to pad the message towards the center with
      *
-     * @param bool $padTopBottom
+     * @param bool    $padTopBottom
      *
      * @return Application A reference to the application class for chaining
      */
@@ -435,7 +441,7 @@ abstract class Application
      * equal to the printed message's debug level.
      *
      * @param string|int $debugLevel The debug level from the DebugLevel class or 'always', 'success', 'fatal',
-     *     'error', 'warning', 'info', 'debug' or 'verbose' with any capitalization
+     *                               'error', 'warning', 'info', 'debug' or 'verbose' with any capitalization
      *
      * @return \CLImax\Application A reference to the application class for chaining
      */
@@ -495,11 +501,11 @@ abstract class Application
      * Prints a single line of text (and appends PHP_EOL, and does not care about the debug level, as it is
      * ALWAYS_PRINT)
      *
-     * @param mixed $output The text or object to be parsed through print_r
-     * @param int $colour The colour to print the text in (from the DebugColour class)
-     * @param int $backgroundColour The background colour to print the text in (from the DebugColour class)
-     * @param null|string $prependText The text to prepend, if null or empty nothing will get prepended
-     * @param bool $printTime Whether or not to add a timestamp to the start of the line
+     * @param mixed       $output           The text or object to be parsed through print_r
+     * @param int         $colour           The colour to print the text in (from the DebugColour class)
+     * @param int         $backgroundColour The background colour to print the text in (from the DebugColour class)
+     * @param null|string $prependText      The text to prepend, if null or empty nothing will get prepended
+     * @param bool        $printTime        Whether or not to add a timestamp to the start of the line
      *
      * @return \CLImax\Application A reference to the application class for chaining
      */
@@ -511,15 +517,16 @@ abstract class Application
         $printTime = true
     ) {
 
-        return $this->printLine(DebugLevel::ALWAYS_PRINT, $output, $colour, $backgroundColour, $prependText, $printTime);
+        return $this->printLine(DebugLevel::ALWAYS_PRINT, $output, $colour, $backgroundColour, $prependText,
+            $printTime);
     }
 
     /**
      * Writes some text (and does not care about the debug level, as it is ALWAYS_PRINT)
      *
-     * @param mixed $output The text or object to be parsed through print_r
-     * @param int $colour The colour to print the text in (from the DebugColour class)
-     * @param int $backgroundColour The background colour to print the text in (from the DebugColour class)
+     * @param mixed $output           The text or object to be parsed through print_r
+     * @param int   $colour           The colour to print the text in (from the DebugColour class)
+     * @param int   $backgroundColour The background colour to print the text in (from the DebugColour class)
      *
      * @return \CLImax\Application A reference to the application class for chaining
      */
@@ -539,12 +546,12 @@ abstract class Application
     /**
      * Prints a single line of text (and appends PHP_EOL)
      *
-     * @param int $debugLevel The debug level from the DebugLevel class
-     * @param mixed $output The text or object to be parsed through print_r
-     * @param int $colour The colour to print the text in (from the DebugColour class)
-     * @param int $backgroundColour The background colour to print the text in (from the DebugColour class)
-     * @param null|string $prependText The text to prepend, if null or empty nothing will get prepended
-     * @param bool $printTime Whether or not to add a timestamp to the start of the line
+     * @param int         $debugLevel       The debug level from the DebugLevel class
+     * @param mixed       $output           The text or object to be parsed through print_r
+     * @param int         $colour           The colour to print the text in (from the DebugColour class)
+     * @param int         $backgroundColour The background colour to print the text in (from the DebugColour class)
+     * @param null|string $prependText      The text to prepend, if null or empty nothing will get prepended
+     * @param bool        $printTime        Whether or not to add a timestamp to the start of the line
      *
      * @return \CLImax\Application A reference to the application class for chaining
      */
@@ -570,12 +577,12 @@ abstract class Application
     /**
      * Prints the text to the CLI
      *
-     * @param int $debugLevel The debug level from the DebugLevel class
-     * @param mixed $output The text or object to be parsed through print_r
-     * @param int $colour The colour to print the text in (from the DebugColour class)
-     * @param int $backgroundColour The background colour to print the text in (from the DebugColour class)
-     * @param null|string $prependText The text to prepend, if null or empty nothing will get prepended
-     * @param bool $printTime Whether or not to add a timestamp to the start of the line
+     * @param int         $debugLevel       The debug level from the DebugLevel class
+     * @param mixed       $output           The text or object to be parsed through print_r
+     * @param int         $colour           The colour to print the text in (from the DebugColour class)
+     * @param int         $backgroundColour The background colour to print the text in (from the DebugColour class)
+     * @param null|string $prependText      The text to prepend, if null or empty nothing will get prepended
+     * @param bool        $printTime        Whether or not to add a timestamp to the start of the line
      *
      * @return \CLImax\Application A reference to the application class for chaining
      */
@@ -624,7 +631,8 @@ abstract class Application
      *
      * @return bool Returns the old value
      */
-    public function disableMessagePadding($disable = true) {
+    public function disableMessagePadding($disable = true)
+    {
         $currentValue = Application::$disableMessagePadding;
 
         Application::$disableMessagePadding = $disable;
@@ -639,13 +647,14 @@ abstract class Application
      *
      * @return \CLImax\Application A reference to the application class for chaining
      */
-    public function exitFatal($prepend = null) {
-        if ($this->defaults->exitOnfatal) {
+    public function exitFatal($prepend = null)
+    {
+        if ($this->environment->exitOnfatal) {
             if ($prepend !== null && $prepend !== '') {
                 echo $prepend;
             }
 
-            $this->defaults->exitOnfatal = false;
+            $this->environment->exitOnfatal = false;
             $this->verbose('Exiting application, as a fatal message was printed, and exitOnfatal is true');
             exit(0);
         }
@@ -656,13 +665,13 @@ abstract class Application
     /**
      * Manipulates the text, and adds padding and such
      *
-     * @param int $debugLevel The debug level from the DebugLevel class
-     * @param mixed $output The text or object to be parsed through print_r
-     * @param int $colour The colour to print the text in (from the DebugColour class)
-     * @param int $backgroundColour The background colour to print the text in (from the DebugColour class)
-     * @param null|string $prependText The text to prepend, if null or empty nothing will get prepended
+     * @param int         $debugLevel       The debug level from the DebugLevel class
+     * @param mixed       $output           The text or object to be parsed through print_r
+     * @param int         $colour           The colour to print the text in (from the DebugColour class)
+     * @param int         $backgroundColour The background colour to print the text in (from the DebugColour class)
+     * @param null|string $prependText      The text to prepend, if null or empty nothing will get prepended
      *
-     * @param bool $pad
+     * @param bool        $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -721,12 +730,12 @@ abstract class Application
     /**
      * Outputs a SUCCESS message with 'SUCCESS' prepended by default
      *
-     * @param mixed $output The text or object to be parsed through print_r
-     * @param string $prependText The text to prepend
-     * @param int $colour The colour to print the text in (from the DebugColour class)
-     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed  $output           The text or object to be parsed through print_r
+     * @param string $prependText      The text to prepend
+     * @param int    $colour           The colour to print the text in (from the DebugColour class)
+     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool $pad
+     * @param bool   $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -743,12 +752,12 @@ abstract class Application
     /**
      * Outputs a FATAL message with 'FATAL' prepended by default
      *
-     * @param mixed $output The text or object to be parsed through print_r
-     * @param string $prependText The text to prepend
-     * @param int $colour The colour to print the text in (from the DebugColour class)
-     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed  $output           The text or object to be parsed through print_r
+     * @param string $prependText      The text to prepend
+     * @param int    $colour           The colour to print the text in (from the DebugColour class)
+     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool $pad
+     * @param bool   $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -763,14 +772,15 @@ abstract class Application
     }
 
     /**
-     * Outputs a FATAL message with 'FATAL' prepended by default (however it does NOT exit even though exitOnfatal is true)
+     * Outputs a FATAL message with 'FATAL' prepended by default (however it does NOT exit even though exitOnfatal is
+     * true)
      *
-     * @param mixed $output The text or object to be parsed through print_r
-     * @param string $prependText The text to prepend
-     * @param int $colour The colour to print the text in (from the DebugColour class)
-     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed  $output           The text or object to be parsed through print_r
+     * @param string $prependText      The text to prepend
+     * @param int    $colour           The colour to print the text in (from the DebugColour class)
+     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool $pad
+     * @param bool   $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -781,13 +791,13 @@ abstract class Application
         $backgroundColour = DebugColour::STANDARD,
         $pad = true
     ) {
-        $exitOnFatal = $this->defaults->exitOnfatal;
+        $exitOnFatal = $this->environment->exitOnfatal;
 
-        $this->defaults->exitOnfatal = false;
+        $this->environment->exitOnfatal = false;
 
         $this->internalDebug(DebugLevel::FATAL, $output, $colour, $backgroundColour, $prependText, $pad);
 
-        $this->defaults->exitOnfatal = $exitOnFatal;
+        $this->environment->exitOnfatal = $exitOnFatal;
 
         return $this; // For chaining
     }
@@ -795,12 +805,12 @@ abstract class Application
     /**
      * Outputs an ERROR message with 'ERROR' prepended by default
      *
-     * @param mixed $output The text or object to be parsed through print_r
-     * @param string $prependText The text to prepend
-     * @param int $colour The colour to print the text in (from the DebugColour class)
-     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed  $output           The text or object to be parsed through print_r
+     * @param string $prependText      The text to prepend
+     * @param int    $colour           The colour to print the text in (from the DebugColour class)
+     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool $pad
+     * @param bool   $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -817,12 +827,12 @@ abstract class Application
     /**
      * Outputs a WARNING message with 'WARNING' prepended by default
      *
-     * @param mixed $output The text or object to be parsed through print_r
-     * @param string $prependText The text to prepend
-     * @param int $colour The colour to print the text in (from the DebugColour class)
-     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed  $output           The text or object to be parsed through print_r
+     * @param string $prependText      The text to prepend
+     * @param int    $colour           The colour to print the text in (from the DebugColour class)
+     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool $pad
+     * @param bool   $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -839,12 +849,12 @@ abstract class Application
     /**
      * Outputs an INFO message with 'INFO' prepended by default
      *
-     * @param mixed $output The text or object to be parsed through print_r
-     * @param string $prependText The text to prepend
-     * @param int $colour The colour to print the text in (from the DebugColour class)
-     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed  $output           The text or object to be parsed through print_r
+     * @param string $prependText      The text to prepend
+     * @param int    $colour           The colour to print the text in (from the DebugColour class)
+     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool $pad
+     * @param bool   $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -861,12 +871,12 @@ abstract class Application
     /**
      * Outputs a DEBUG message with 'DEBUG' prepended by default
      *
-     * @param mixed $output The text or object to be parsed through print_r
-     * @param string $prependText The text to prepend
-     * @param int $colour The colour to print the text in (from the DebugColour class)
-     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed  $output           The text or object to be parsed through print_r
+     * @param string $prependText      The text to prepend
+     * @param int    $colour           The colour to print the text in (from the DebugColour class)
+     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool $pad
+     * @param bool   $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -883,12 +893,12 @@ abstract class Application
     /**
      * Outputs a VERBOSE message with 'VERBOSE' prepended by default
      *
-     * @param mixed $output The text or object to be parsed through print_r
-     * @param string $prependText The text to prepend
-     * @param int $colour The colour to print the text in (from the DebugColour class)
-     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed  $output           The text or object to be parsed through print_r
+     * @param string $prependText      The text to prepend
+     * @param int    $colour           The colour to print the text in (from the DebugColour class)
+     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool $pad
+     * @param bool   $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -907,22 +917,23 @@ abstract class Application
      *
      * Outputs a separator that stretches to the edge of the CMD
      *
-     * @param string $separator What character the separator should be made of
-     * @param int $colour The colour to print the text in (from the DebugColour class)
-     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param string $separator        What character the separator should be made of
+     * @param int    $colour           The colour to print the text in (from the DebugColour class)
+     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
      * @return \CLImax\Application A reference to the application class for chaining
      */
-    public function seperator($separator = '-', $colour = DebugColour::LIGHT_RED, $backgroundColour = null) {
+    public function seperator($separator = '-', $colour = DebugColour::LIGHT_RED, $backgroundColour = null)
+    {
         return call_user_func_array([$this, 'separator'], func_get_args());
     }
 
     /**
      * Outputs a separator that stretches to the edge of the CMD
      *
-     * @param string $separator What character the separator should be made of
-     * @param int $colour The colour to print the text in (from the DebugColour class)
-     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param string $separator        What character the separator should be made of
+     * @param int    $colour           The colour to print the text in (from the DebugColour class)
+     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
      * @return \CLImax\Application A reference to the application class for chaining
      */
@@ -971,7 +982,7 @@ abstract class Application
     /**
      * Pauses the application (and waits for enter)
      *
-     * @param null $pauseMessage
+     * @param null   $pauseMessage
      * @param string $pauseMessageType
      *
      * @return string
@@ -1055,14 +1066,9 @@ abstract class Application
                     // Line 1 will always have 0 newlines in front of it, so add 1 to the number of matches
                     $line = preg_match_all('~(\r\n|\n\r|\r|\n)~', substr($applicationContents, 0, $matchOffset)) + 1;
 
-                    $foundArguments[$argumentName] = DebugColour::buildString(DebugColour::LIGHT_BLUE)
-                        ->write($filename)
-                        ->write(':')
-                        ->write($line, DebugColour::BROWN)
-                        ->write(' (')
-                        ->write($method, DebugColour::WHITE, DebugColour::RED)
-                        ->write(')')
-                        ->toString();
+                    $foundArguments[$argumentName] = DebugColour::buildString(DebugColour::LIGHT_BLUE)->write($filename)->write(':')->write($line,
+                            DebugColour::BROWN)->write(' (')->write($method, DebugColour::WHITE,
+                            DebugColour::RED)->write(')')->toString();
                 }
             }
         }
@@ -1075,7 +1081,8 @@ abstract class Application
      *
      * @return \CLImax\Table
      */
-    public function table($rows = []) {
+    public function table($rows = [])
+    {
         $table = new Table($this, $rows);
 
         return $table;
@@ -1087,7 +1094,8 @@ abstract class Application
      *
      * @return string
      */
-    public function getRawArguments($offset = 0, $escape = true) {
+    public function getRawArguments($offset = 0, $escape = true)
+    {
         if (empty($_SERVER['argv'])) {
             return '';
         }
@@ -1128,7 +1136,7 @@ abstract class SubApplication extends Application
     /**
      * Magically calls a method of the main application
      *
-     * @param string $method
+     * @param string          $method
      * @param array|Arguments $arguments
      *
      * @return mixed

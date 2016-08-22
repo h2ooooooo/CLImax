@@ -47,7 +47,7 @@ class Size extends Module {
 	 * @param int $whatToUpdate
 	 */
 	public function checkUpdate( $whatToUpdate = SizeType::BOTH ) {
-		if ( microtime( true ) - $this->lastUpdate > $this->application->defaults->sizeUpdateInterval ) {
+		if ( microtime( true ) - $this->lastUpdate > $this->application->environment->sizeUpdateInterval ) {
 			$this->update( $whatToUpdate );
 		}
 	}
@@ -70,7 +70,7 @@ class Size extends Module {
 				exec( 'tput lines', $columnsRaw );
 			}
 
-			$this->rows = ( ! empty( $rowsRaw ) ? (int) $rowsRaw : $this->application->defaults->sizeRows );
+			$this->rows = ( ! empty( $rowsRaw ) ? (int) $rowsRaw : $this->application->environment->sizeRows );
 		}
 
 		if ( $whatToUpdate & SizeType::COLUMNS ) {
@@ -80,7 +80,7 @@ class Size extends Module {
 				exec( 'tput cols', $columnsRaw );
 			}
 
-			$this->columns = ( ! empty( $columnsRaw ) ? (int) $columnsRaw : $this->application->defaults->sizeColumns );
+			$this->columns = ( ! empty( $columnsRaw ) ? (int) $columnsRaw : $this->application->environment->sizeColumns );
 		}
 
 		$this->lastUpdate = microtime( true );

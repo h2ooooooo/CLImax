@@ -10,7 +10,19 @@ namespace CLImax\Tests;
 
 use CLImax\Application;
 
-class CLImaxTest extends \PHPUnit_Framework_TestCase
+require_once(dirname(__FILE__) . '/../vendor/autoload.php');
+/*class CLImaxTest extends \PHPUnit_Framework_TestCase
 {
-    
+}*/
+
+/**
+ * Class CLImaxTestApplication
+ * @package CLImax\Tests
+ */
+class CLImaxTestApplication extends Application {
+    public function init() {
+        $this->success('It works!');
+    }
 }
+
+CLImaxTestApplication::launch();
