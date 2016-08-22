@@ -100,10 +100,6 @@ abstract class Application
          */
         'progress'   => 'Progress',
         /**
-         * string 'plugins' A Plugins object defining the plugins
-         */
-        'plugins'    => 'Plugins',
-        /**
          * string 'clear' A Clear object used to clear text and set cursor position
          */
         'clear'      => 'Clear',
@@ -312,10 +308,6 @@ abstract class Application
      */
     public function __destruct()
     {
-        if ($this->plugins !== null) {
-            $this->plugins->unloadAll();
-        }
-
         if ($this->showPaddingBanners() && defined('STDIN')) {
             if (!empty($this->startTime)) {
                 $seconds = microtime(true) - $this->startTime;
