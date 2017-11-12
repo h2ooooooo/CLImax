@@ -191,8 +191,8 @@ class Question extends Module {
 	 *
 	 * @return array
 	 * @throws \Exception
-     */
-    public function askToggled($question, $choices, $options = null, $defaultToggleValue = true) {
+	 */
+	public function askToggled($question, $choices, $options = null, $defaultToggleValue = true) {
 		$toggleStatus = [];
 
 		if (is_array($defaultToggleValue)) {
@@ -234,7 +234,7 @@ class Question extends Module {
 				}
 			]));
 
-			if (!empty($answer)) {
+			if ($answer !== null && $answer !== '') {
 				$toggleStatus[$answer] = !$toggleStatus[$answer];
 
 				// It's going to run again, let's clean the buffer
@@ -452,12 +452,12 @@ class Question extends Module {
 
 	/**
 	 * @param string $message
-     */
+	 */
 	public function pressToContinue( $message = 'Press ENTER to continue' ) {
-		$answer = $this->ask( $message, array(
+		$this->ask( $message, array(
 			'caseSensitive'       => false,
 			'showPossibleOptions' => false,
-			'canBeBlank'          => false
+			'canBeBlank'          => true
 		) );
 	}
 }
