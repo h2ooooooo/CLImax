@@ -14,7 +14,7 @@ namespace CLImax;
 class Table extends Module {
     protected $headers = [];
     protected $rows = [];
-    protected $boxSet = BoxSet::DOS_DOUBLE;
+    protected $boxSet = BoxSet::SIMPLE;
     protected $useRowSeparator = false;
     protected $charPadding = ' ';
 
@@ -298,53 +298,75 @@ class Table extends Module {
  * @package CLImax
  */
 class BoxSet {
-    const DOS_SINGLE = 'dosSingle';
-    const DOS_DOUBLE = 'dosDouble';
+	const SIMPLE = 'simple';
+	const DOS_SINGLE = 'dosSingle';
+	const DOS_DOUBLE = 'dosDouble';
 
-    private static $sets = [
-        BoxSet::DOS_SINGLE => [
-            'top' => [
-                'left' => 0xda, //'┌',
-                'cross' => 0xc2, //'┬',
-                'right' => 0xbf, //'┐',
-            ],
-            'middle' => [
-                'left' => 0xc3, //'├',
-                'cross' => 0xc5, //'┼',
-                'right' => 0xb4, //'┤',
-            ],
-            'bottom' => [
-                'left' => 0xc0, //'└',
-                'cross' => 0xc1, //'┴',
-                'right' => 0xd9, //'┘',
-            ],
-            'line' => [
-                'horizontal' => 0xc4, //'─',
-                'vertical' => 0xb3, //'│',
-            ],
-        ],
-        BoxSet::DOS_DOUBLE => [
-            'top' => [
-                'left' => 0xc9, //'╔',
-                'cross' => 0xcb, //'╦',
-                'right' => 0xbb, //'╗',
-            ],
-            'middle' => [
-                'left' => 0xcc, //'╠',
-                'cross' => 0xce, //'╬',
-                'right' => 0xb9, //'╣',
-            ],
-            'bottom' => [
-                'left' => 0xc8, //'╚',
-                'cross' => 0xca, //'╩',
-                'right' => 0xbc, //'╝',
-            ],
-            'line' => [
-                'horizontal' => 0xcd, //'═',
-                'vertical' => 0xba, //'║',
-            ],
-        ],
-    ];
+	private static $sets = [
+		BoxSet::SIMPLE => [
+			'top' => [
+				'left' => '+',
+				'cross' => '+',
+				'right' => '+',
+			],
+			'middle' => [
+				'left' => '+',
+				'cross' => '+',
+				'right' => '+',
+			],
+			'bottom' => [
+				'left' => '+',
+				'cross' => '+',
+				'right' => '+',
+			],
+			'line' => [
+				'horizontal' => '-',
+				'vertical' => '|',
+			],
+		],
+		BoxSet::DOS_SINGLE => [
+			'top' => [
+				'left' => 0xda, //'┌',
+				'cross' => 0xc2, //'┬',
+				'right' => 0xbf, //'┐',
+			],
+			'middle' => [
+				'left' => 0xc3, //'├',
+				'cross' => 0xc5, //'┼',
+				'right' => 0xb4, //'┤',
+			],
+			'bottom' => [
+				'left' => 0xc0, //'└',
+				'cross' => 0xc1, //'┴',
+				'right' => 0xd9, //'┘',
+			],
+			'line' => [
+				'horizontal' => 0xc4, //'─',
+				'vertical' => 0xb3, //'│',
+			],
+		],
+		BoxSet::DOS_DOUBLE => [
+			'top' => [
+				'left' => 0xc9, //'╔',
+				'cross' => 0xcb, //'╦',
+				'right' => 0xbb, //'╗',
+			],
+			'middle' => [
+				'left' => 0xcc, //'╠',
+				'cross' => 0xce, //'╬',
+				'right' => 0xb9, //'╣',
+			],
+			'bottom' => [
+				'left' => 0xc8, //'╚',
+				'cross' => 0xca, //'╩',
+				'right' => 0xbc, //'╝',
+			],
+			'line' => [
+				'horizontal' => 0xcd, //'═',
+				'vertical' => 0xba, //'║',
+			],
+		],
+	];
 
     private static $_sets = [];
 
