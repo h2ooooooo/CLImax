@@ -128,7 +128,6 @@ class Table extends Module {
 
 		$columnMaxLength = [];
 		$headerColumns = [];
-		$paddingTypes = [];
 		$formats = [];
 
 		foreach ($columns as $column => $columnValues) {
