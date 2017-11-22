@@ -50,7 +50,10 @@ class Progress extends Module {
 
 		if ($message !== null) {
 			$this->application->info($message);
-		}
+		} else {
+            echo PHP_EOL;
+        }
+		
 		$this->debugLevel = $debugLevel;
 		$this->textColour = $textColour;
 		$this->backgroundColour = $backgroundColour;

@@ -1126,6 +1126,15 @@ abstract class Application
 
 		return implode(' ', $arguments);
 	}
+
+    /**
+     * Gets the module classes
+     * 
+     * @return array
+     */
+	public function getModuleClasses() {
+	    return $this->moduleClasses;
+    }
 }
 
 /**
