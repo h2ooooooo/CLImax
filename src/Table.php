@@ -12,6 +12,7 @@ namespace CLImax;
  * @package CLImax
  */
 class Table extends Module {
+    protected $headerCallback;
 	protected $headers = [];
 	protected $rows = [];
 	protected $boxSet = BoxSet::SIMPLE;
@@ -156,10 +157,14 @@ class Table extends Module {
 
 		foreach ($columns as $column) {
 			$columnMaxLength[$column] = 0;
-			$headerColumns[$column] = isset($this->headers[$column]) ? $this->headers[$column] : $column;
 			$paddingTypes[$column] = isset($paddingTypes[$column]) ? $paddingTypes[$column] : STR_PAD_RIGHT;
 			$formats[$column] = isset($this->formats[$column]) ? $this->formats[$column] : null;
+            $headerColumns[$column] = isset($this->headers[$column]) ? $this->headers[$column] : $column;
 		}
+
+		if (!empty($this->headerCallback) && is_callable($this->headerCallback)) {
+            $headerColumns = array_map($this->headerCallback, $headerColumns);
+        }
 
 		foreach ($columns as $column) {
 			if ($formats[$column] !== null) {
@@ -303,6 +308,12 @@ class Table extends Module {
 
 		return strlen($string);
 	}
+
+	public function setHeaderCallback($headerCallback) {
+	    $this->headerCallback = $headerCallback;
+
+	    return $this;
+    }
 
 	/**
 	 * @param int $debugLevel
