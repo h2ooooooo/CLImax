@@ -21,7 +21,11 @@ require_once(dirname(__FILE__) . '/../vendor/autoload.php');
  */
 class CLImaxTestApplication extends Application {
     public function init() {
-        $this->success('It works!');
+        $answer = $this->question->ask('Test', [
+        	'mask' => true,
+        ]);
+
+        var_dump($answer);
     }
 }
 

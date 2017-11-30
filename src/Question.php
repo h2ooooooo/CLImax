@@ -7,6 +7,9 @@
 
 namespace CLImax;
 
+use Seld\CliPrompt\CliPrompt;
+use Symfony\Component\Process\Process;
+
 /**
  * Class Question
  * @package CLImax
@@ -60,7 +63,7 @@ class Question extends Module {
 	}
 
 	/**
-	 * Asks a question.
+	 * Asks a question using a hidden prompt
 	 *
 	 * @param string $question The question to ask the CLI user
 	 * @param array $options An array of key-value pair options - the possible keys are as follows:
@@ -77,6 +80,41 @@ class Question extends Module {
 	 *
 	 * @return string The answer to the question
 	 */
+	public function hidden( $question, $options = null ) {
+		$overwriteOptions = [
+			'mask' => true
+		];
+
+		if (!empty($options)) {
+			$options = array_merge($options, $overwriteOptions);
+		} else {
+			$options = $overwriteOptions;
+		}
+
+		return $this->ask($question, $options);
+	}
+
+
+
+	/**
+	 * Asks a question.
+	 *
+	 * @param string $question The question to ask the CLI user
+	 * @param array $options An array of key-value pair options - the possible keys are as follows:
+	 *        array    'possibleOptions'        The possible options. If the answer to the question is not in this key (and it is not null), it will ask the question again
+	 *        bool    'showPossibleOptions'    Whether or not to show the possible options after asking the question. Eg. "Should we do it? (y/n): "
+	 *        bool    'caseSensitive'        Whether or not the answer is case sensitive. In short, if this is false, it will simply turn the answer and possible options into lowercase
+	 *        mixed    'default'                The default value that should be selected, if the user was to just press enter (if null, there is no default, and it will ask the question again if 'canBeBlank' is false)
+	 *        bool    'canBeBlank'            Whether or not the answer can be blank. If this is true, and the user doesn't answer anything, it will accept it and return nothing as a response
+	 *        int    'textColour'            The colour of the text of the question
+	 *        int    'backgroundColour'        The colour of the background colour of the text of the question
+	 *        string 'cast' What type this should be cast as
+	 *        callable 'callback' The callback to validate the value - function($answer) { return true; }
+	 *        string 'argument' If you want an argument to take presedence over the question you can type the name here - if the argument is specified the question will not be asked
+	 *        bool 'mask' Whether or not the answer should be hidden (masked)
+	 *
+	 * @return string The answer to the question
+	 */
 	public function ask( $question, $options = null ) {
 		$defaultOptions = array(
 			'possibleOptions'     => null,
@@ -90,6 +128,7 @@ class Question extends Module {
 			'callback'            => null,
 			'argument' 			 => null,
 			'argumentExists' 	=> null,
+			'mask' => false,
 		);
 
 		$options = ( $options !== null ? array_merge( $defaultOptions, $options ) : $defaultOptions );
@@ -123,30 +162,30 @@ class Question extends Module {
 
 		$response = null;
 
-		while ( ! @feof( STDIN ) ) {
-			$inputRead = @fread( STDIN, 1024 );
-
-			if ( $inputRead === false ) {
-				break;
+		while (true) { // We'll break out during the loop
+			if ($options['mask']) {
+				$inputRead = CliPrompt::hiddenPrompt();
+			} else {
+				$inputRead = CliPrompt::prompt();
 			}
 
-			$inputRead = trim( $inputRead );
+			$inputRead = trim($inputRead);
 
-			if ( $inputRead == '' ) {
-				if ( $options['default'] !== null ) {
+			if ($inputRead == '') {
+				if ($options['default'] !== null) {
 					$response = $options['default'];
-				} else if ( $options['canBeBlank'] ) {
+				} else if ($options['canBeBlank']) {
 					$response = '';
 				}
 			} else {
-				if ( $options['possibleOptions'] !== null ) {
-					if ( $options['caseSensitive'] ) {
-						$found = array_search( $inputRead, $options['possibleOptions'] );
+				if ($options['possibleOptions'] !== null) {
+					if ($options['caseSensitive']) {
+						$found = array_search($inputRead, $options['possibleOptions']);
 					} else {
-						$found = array_search( strtolower( $inputRead ),
-							array_map( 'strtolower', $options['possibleOptions'] ) );
+						$found = array_search(strtolower($inputRead),
+							array_map('strtolower', $options['possibleOptions']));
 					}
-					if ( $found !== false ) {
+					if ($found !== false) {
 						$response = $options['possibleOptions'][ $found ];
 					}
 				} else {
@@ -154,30 +193,30 @@ class Question extends Module {
 				}
 			}
 
-			if ( $response !== null && $response !== false ) {
-				if ( ! empty( $options['cast'] ) ) {
-					@settype( $response, $options['cast'] );
+			if ($response !== null && $response !== false) {
+				if ( ! empty($options['cast'])) {
+					@settype($response, $options['cast']);
 				}
 
-				if ( ! empty( $options['callback'] ) ) {
-					$response = call_user_func( $options['callback'], $response );
+				if ( ! empty($options['callback'])) {
+					$response = call_user_func($options['callback'], $response);
 
-					if ( $response === false || $response === null ) {
+					if ($response === false || $response === null) {
 						$response = null;
 					}
 				}
 			}
 
-			if ( $response !== null ) {
+			if ($response !== null) {
 				break;
 			} else {
-				$this->application->printText( DebugLevel::ALWAYS_PRINT, $questionFull, $options['textColour'],
-					$options['backgroundColour'], null, false );
+				$this->application->printText(DebugLevel::ALWAYS_PRINT, $questionFull, $options['textColour'],
+					$options['backgroundColour'], null, false);
 			}
 		}
 
-		if ( $response === null ) {
-			$this->application->fatal( 'Could not read STDIN' );
+		if ($response === null) {
+			$this->application->fatal('Could not read STDIN');
 		}
 
 		return $response;
