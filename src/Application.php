@@ -437,6 +437,15 @@ abstract class Application
 	{
 		return Arguments::init($argumentsRaw);
 	}
+	
+	/**
+	 * Gets the current debug level ENUM
+	 *
+	 * @return int The debug level from the DebugLevel
+	 */
+	public function getDebugLevel() {
+		return $this->debugLevel;
+	}
 
 	/**
 	 * Sets the current debug level. A message will not be
@@ -915,6 +924,137 @@ abstract class Application
 		return $this->internalDebug(DebugLevel::VERBOSE, $output, $colour, $backgroundColour, $prependText, $pad);
 	}
 
+	private $spinners = [
+		'simple' => "|/-\\",
+		'morse' => "⠂-–—–-",
+		'pie' => "◐◓◑◒",
+		'clock' => "◴◷◶◵",
+		'square' => "◰◳◲◱",
+		'dancing-squares' => "▖▘▝▗",
+		'pulsating-square' => "■□▪▫",
+		'tetris' => "▌▀▐▄",
+		'full-square' => "▉▊▋▌▍▎▏▎▍▌▋▊▉",
+		'rising-square' => "▁▃▄▅▆▇█▇▆▅▄▃",
+		'arrow' => "←↖↑↗→↘↓↙",
+		'line' => "┤┘┴└├┌┬┐",
+		'triangle' => "◢◣◤◥",
+		'pulsating-o' => ".oO°°Oo.",
+		'exploding-o' => ".oO@*",
+		'world' => "🌍🌎🌏",
+		'smiley' => "◡◡ ⊙⊙ ◠◠",
+		'fall' => "☱☲☴",
+		'digital-around' => "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏",
+		'digital-up-down' => "⠋⠙⠚⠞⠖⠦⠴⠲⠳⠓",
+		'digital-left-right' => "⠄⠆⠇⠋⠙⠸⠰⠠⠰⠸⠙⠋⠇⠆",
+		'digital-random-1' => "⠋⠙⠚⠒⠂⠂⠒⠲⠴⠦⠖⠒⠐⠐⠒⠓⠋",
+		'digital-random-2' => "⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠴⠲⠒⠂⠂⠒⠚⠙⠉⠁",
+		'digital-random-3' => "⠈⠉⠋⠓⠒⠐⠐⠒⠖⠦⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈",
+		'digital-random-4' => "⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈",
+		'digital-dancing-dot' => "⢄⢂⢁⡁⡈⡐⡠",
+		'digital-dancing-walls' => "⢹⢺⢼⣸⣇⡧⡗⡏",
+		'digital-dancing-hole' => "⣾⣽⣻⢿⡿⣟⣯⣷",
+		'pulsating-dot' => "⠁⠂⠄⡀⢀⠠⠐⠈",
+		'moon' => "🌑🌒🌓🌔🌕🌝🌖🌗🌘🌚"
+	];
+
+	private function getSpinner($spinner = 'simple') {
+		if (!isset($this->spinners[$spinner])) {
+			throw new \Exception(sprintf('Spinner "%s" not found', $spinner));
+		}
+
+		return $this->spinners[$spinner];
+	}
+
+	public function getSpinners() {
+		return array_keys($this->spinners);
+	}
+
+	/**
+	 * Sleeps for X amount of seconds
+	 *
+	 * @param float $seconds The amount of seconds to sleep for (0.1 would be 1/10th of a second)
+	 * @param string $spinner The spinner to use when animating
+	 * @param float $spinnerUpdateIntervalSeconds
+	 *
+	 * @return \CLImax\Application A reference to the application class for chaining
+	 */
+	public function sleep($seconds, $spinner = 'simple', $spinnerUpdateIntervalSeconds = 0.1)
+	{
+		if ($seconds <= 0) {
+			return $this;
+		}
+
+		$microUpdateInterval = $spinnerUpdateIntervalSeconds * 1000000;
+		$microSecondsSleepTime = $seconds * 1000000;
+
+		if ($microSecondsSleepTime > $microUpdateInterval) {
+			$sleepTimeRemaining = $microSecondsSleepTime;
+
+			$spinner = $this->getSpinner($spinner);
+			$spinnerAmount = mb_strlen($spinner);
+			$spinnerIndex = 0;
+			$iteration = 0;
+
+			while ($sleepTimeRemaining > 0) {
+				$sleepTime = min($sleepTimeRemaining, $microUpdateInterval);
+
+				if ($iteration >= 1) {
+					$this->clear->lastLine();
+				}
+
+				$spinnerCharacter = utf8_encode(mb_substr($spinner, $spinnerIndex, 1));
+
+				$this->info(sprintf(
+					'Sleeping.. %s | %s',
+					$spinnerCharacter,
+					$this->secondsToTime($sleepTimeRemaining / 1000000)
+				));
+
+				usleep($sleepTime);
+
+				$sleepTimeRemaining -= $sleepTime;
+
+				$spinnerIndex++;
+
+				if ($spinnerIndex >= $spinnerAmount) {
+					$spinnerIndex = 0;
+				}
+
+				$iteration++;
+			}
+		} else {
+			// Seconds is under our update limit, so we'll just sleep with no animation
+			usleep(ceil($microSecondsSleepTime));
+		}
+
+		return $this;
+	}
+
+	private function secondsToTime($seconds) {
+		$oneHour = 3600;
+		$oneMinute = 60;
+
+		$hours = 0;
+		$minutes = 0;
+
+		while ($seconds >= $oneHour) {
+			$hours++;
+
+			$seconds -= $oneHour;
+		}
+
+		while ($seconds >= $oneMinute) {
+			$minutes++;
+
+			$seconds -= $oneMinute;
+		}
+
+		$_seconds = floor($seconds);
+		$milliseconds = round(($seconds - $_seconds) * 10);
+
+		return sprintf('%02s:%02s:%02s,%s', $hours, $minutes, $_seconds, $milliseconds);
+	}
+
 	/**
 	 * (this is an alias of $this->separator for crappy spelling)
 	 *
@@ -952,24 +1092,6 @@ abstract class Application
 		$seperatorLine = str_repeat($separator, $repetitions) . mb_substr($separator, 0, $columns - $repetitionsLength);
 
 		return $this->printLine(DebugLevel::ALWAYS_PRINT, $seperatorLine, $colour, $backgroundColour, '', false);
-	}
-
-	/**
-	 * Sleeps for X amount of seconds
-	 *
-	 * @param float $seconds The amount of seconds to sleep for (0.1 would be 1/10th of a second)
-	 *
-	 * @return \CLImax\Application A reference to the application class for chaining
-	 */
-	public function sleep($seconds)
-	{
-		if ($seconds <= 0) {
-			return $this;
-		}
-
-		usleep(round($seconds * 1000000));
-
-		return $this;
 	}
 
 	/**
