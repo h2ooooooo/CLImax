@@ -97,12 +97,20 @@ class Table extends Module {
 	 * @param $boxSet
 	 *
 	 * @throws \Exception
+     *
+     * @return $this
 	 */
 	public function setBoxSet($boxSet) {
 		BoxSet::get($boxSet); // Let's throw an exception if it does not exist
 
 		$this->boxSet = $boxSet;
+
+        return $this;
 	}
+
+    public function hasRows() {
+        return !empty($this->rows);
+    }
 
 	/**
 	 * @return string
