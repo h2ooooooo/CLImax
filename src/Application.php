@@ -135,6 +135,8 @@ abstract class Application
 
 	protected static $instances = [];
 
+    protected $scriptName;
+
 	/**
 	 * @param int        $debugLevel       Which debug level to start the script on - if null, it will default to
 	 *                                     $defaults->debugLevel.
@@ -213,7 +215,9 @@ abstract class Application
 
 		//Parse arguments
 		if ($_SERVER['argc'] > 1) {
-			$this->arguments = $this->parseArguments(array_slice($_SERVER['argv'], 1));
+            $this->scriptName = $_SERVER['argv'][0];
+
+            $this->arguments = $this->parseArguments(array_slice($_SERVER['argv'], 1));
 			if ($debugLevel = $this->arguments->get('debugLevel')) {
 				$this->setDebugLevel($debugLevel);
 			}
@@ -224,6 +228,13 @@ abstract class Application
 		if ($this->arguments->has('climax-disable-padding-banners')) {
 			Application::$showPaddingBanners = false;
 		}
+
+        $cliRows = $this->arguments->get('cliRows');
+        $cliColumns = $this->arguments->get('cliColumns');
+
+        if (!empty($cliRows) && !empty($cliColumns)) {
+            $this->size->setStaticSize($cliRows, $cliColumns);
+        }
 
 		$this->startTime = microtime(true);
 
@@ -335,7 +346,16 @@ abstract class Application
 						$seconds) . ' second' . ($seconds != 1 ? 's' : '');
 
 				$this->fullLineMessage('END', DebugColour::LIGHT_CYAN, null, null, true, '-', false);
-				$this->outputText("\n" . DebugColour::getColourCode(DebugColour::GREEN) . 'It took ' . $tookTime . "!\n\n" . DebugColour::getColourCode(DebugColour::STANDARD));
+
+                $colorHighlight = DebugColour::getColourCode(DebugColour::LIGHT_GREEN);
+                $colorMessage = DebugColour::getColourCode(DebugColour::LIGHT_CYAN);
+                $colorStandard = DebugColour::getColourCode(DebugColour::STANDARD);
+
+                $message = sprintf("Script [%s] ended at [%s]\n\nIt took [%s]\n\n", $this->scriptName, date('Y-m-d H:i:s'), $tookTime);
+
+                echo $colorMessage;
+                echo preg_replace('~\[([^\]]+)\]~', $colorHighlight . '$1' . $colorStandard . $colorMessage, $message);
+                echo $colorStandard;
 			} else {
 				$this->verbose('We do not know how long it took seeing as $this->startTime was not set. Did you remember to call parent::__construct?');
 				$this->fullLineMessage('END', DebugColour::LIGHT_CYAN, null, null, true, '-', false);
