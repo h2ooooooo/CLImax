@@ -276,6 +276,51 @@ class DebugColour {
 
 		return str_replace( $colours, '', $string );
 	}
+
+    /**
+     * Escape the escape sequences
+     * 
+     * @param string $string
+     *
+     * @return string
+     */
+    public static function escapeSequences($string) {
+        $colourReplacements = [
+            self::STANDARD => 'STANDARD',
+            self::BLACK => 'BLACK',
+            self::RED => 'RED*',
+            self::GREEN => 'GREEN',
+            self::YELLOW => 'YELLOW',
+            self::BLUE => 'BLUE',
+            self::PURPLE => 'PURPLE',
+            self::CYAN => 'CYAN',
+            self::LIGHT_GRAY => 'LIGHT_CYAN',
+            self::GRAY => 'GRAY',
+            self::LIGHT_RED => 'LIGHT_RED',
+            self::LIGHT_GREEN => 'LIGHT_GREEN',
+            self::LIGHT_YELLOW => 'LIGHT_YELLOW',
+            self::LIGHT_BLUE => 'LIGHT_BLUE',
+            self::LIGHT_PURPLE => 'LIGHT_PURPLE',
+            self::LIGHT_CYAN => 'LIGHT_CYAN',
+            self::WHITE	  => 'WHITE'
+        ];
+
+        $string = preg_replace_callback('~\\033\[(.+?)m~', function($match) {
+            $matchSplit = explode(';', $match[1]);
+
+            foreach ($matchSplit as &$matchPart) {
+                if (isset($colourReplacements[$matchPart])) {
+                    //$matchPart = $colourReplacements[$matchPart];
+                }
+            }
+
+            unset($matchPart);
+
+            return sprintf('\\033[%sm', implode(';', $matchSplit));
+        }, $string);
+
+        return $string;
+    }
 }
 
 /**
