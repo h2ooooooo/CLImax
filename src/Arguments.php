@@ -283,36 +283,41 @@ class Arguments
         return $this->arguments[$argument];
     }
 
-    /**
-     * Creates argument aliases - makes all the specified arguments act the same way (essentially being aliases of
-     * eachother)
-     *
-     * @param array $arguments An array of arguments that are aliases of eachother
-     *
-     * @return $this
-     */
-    public function alias($arguments)
-    {
-        $arguments = array_map([$this, 'escapeArgument'], $arguments);
+	/**
+	 * Creates argument aliases - makes all the specified arguments act the same way (essentially being aliases of
+	 * eachother)
+	 *
+	 * @param string $alias The alias to refer to $argument
+	 * @param string $argument The argument to create an alias for
+	 *
+	 * @return $this An instance of Arguments, for chaining
+	 */
+	public function alias($alias, $argument)
+	{
+		$alias = $this->escapeArgument($alias);
+		$argument = $this->escapeArgument($argument);
 
-        foreach ($arguments as $argument) {
-            $aliases = [];
+		if (empty($this->aliases[ $alias ])) {
+			$this->aliases[ $alias ] = [$argument];
+		} else {
+			$this->aliases[ $alias ][] = $argument;
+		}
 
-            foreach ($arguments as $_argument) {
-                if ($argument === $_argument) {
-                    continue;
-                }
+		return $this; // For chaining
+	}
 
-                $aliases[] = $_argument;
-            }
+	/**
+	 * @param array $kvpArgumentAliases An array where the key is the alias and the value is the argument to create the alias for
+	 *
+	 * @return $this An instance of Arguments, for chaining
+	 */
+	public function aliases($kvpArgumentAliases) {
+		foreach ($kvpArgumentAliases as $argument => $aliases) {
+			$this->alias($aliases, $argument);
+		}
 
-            if (!empty($aliases)) {
-                $this->aliases[$argument] = $aliases;
-            }
-        }
-
-        return $this; // For chaining
-    }
+		return $this; // For chaining
+	}
 
     /**
      * Magic alias for $this->has($argument)
