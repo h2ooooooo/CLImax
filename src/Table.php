@@ -12,7 +12,7 @@ namespace CLImax;
  * @package CLImax
  */
 class Table extends Module {
-    protected $headerCallback;
+	protected $headerCallback;
 	protected $headers = [];
 	protected $rows = [];
 	protected $boxSet = BoxSet::SIMPLE;
@@ -34,6 +34,15 @@ class Table extends Module {
 		if (!empty($rows)) {
 			$this->addRows($rows);
 		}
+	}
+
+	/**
+	 * @return $this
+	 */
+	public function addSeparator() {
+		$this->rows[] = null;
+
+		return $this;
 	}
 
 	/**
@@ -97,20 +106,20 @@ class Table extends Module {
 	 * @param $boxSet
 	 *
 	 * @throws \Exception
-     *
-     * @return $this
+	 *
+	 * @return $this
 	 */
 	public function setBoxSet($boxSet) {
 		BoxSet::get($boxSet); // Let's throw an exception if it does not exist
 
 		$this->boxSet = $boxSet;
 
-        return $this;
+		return $this;
 	}
 
-    public function hasRows() {
-        return !empty($this->rows);
-    }
+	public function hasRows() {
+		return !empty($this->rows);
+	}
 
 	/**
 	 * @return string
@@ -124,12 +133,14 @@ class Table extends Module {
 		$rows = $this->rows;
 
 		foreach ($rows as $row) {
-			foreach ($row as $column => $value) {
-				if (!isset($columns[$column])) {
-					$columns[$column] = [];
-				}
+			if (!empty($row)) {
+				foreach ($row as $column => $value) {
+					if ( ! isset($columns[ $column ])) {
+						$columns[ $column ] = [];
+					}
 
-				$columns[$column][] = $value;
+					$columns[ $column ][] = $value;
+				}
 			}
 		}
 
@@ -167,12 +178,12 @@ class Table extends Module {
 			$columnMaxLength[$column] = 0;
 			$paddingTypes[$column] = isset($paddingTypes[$column]) ? $paddingTypes[$column] : STR_PAD_RIGHT;
 			$formats[$column] = isset($this->formats[$column]) ? $this->formats[$column] : null;
-            $headerColumns[$column] = isset($this->headers[$column]) ? $this->headers[$column] : $column;
+			$headerColumns[$column] = isset($this->headers[$column]) ? $this->headers[$column] : $column;
 		}
 
 		if (!empty($this->headerCallback) && is_callable($this->headerCallback)) {
-            $headerColumns = array_map($this->headerCallback, $headerColumns);
-        }
+			$headerColumns = array_map($this->headerCallback, $headerColumns);
+		}
 
 		foreach ($columns as $column) {
 			if ($formats[$column] !== null) {
@@ -197,14 +208,16 @@ class Table extends Module {
 		$rows = array_merge([$headerColumns], $rows);
 
 		foreach ($rows as &$row) {
-			foreach ($row as $column => &$value) {
-				$value = $this->charPadding . $value . $this->charPadding;
+			if ($row !== null) {
+				foreach ($row as $column => &$value) {
+					$value = $this->charPadding . $value . $this->charPadding;
 
-				// TODO: Work with non-unicode characters or at least convert the value
-				$columnMaxLength[$column] = max($columnMaxLength[$column], $this->stringLength($value));
+					// TODO: Work with non-unicode characters or at least convert the value
+					$columnMaxLength[ $column ] = max($columnMaxLength[ $column ], $this->stringLength($value));
+				}
+
+				unset($value);
 			}
-
-			unset($value);
 		}
 
 		unset($row);
@@ -215,34 +228,42 @@ class Table extends Module {
 			$separatorColumns[] = str_repeat($boxSet['line']['horizontal'], $columnMaxLength[$column]);
 		}
 
+		$rowSeparatorLine = $boxSet['middle']['left'] . implode($boxSet['middle']['cross'], $separatorColumns) . $boxSet['middle']['right'];
+
 		$rowBuffer = [];
 
 		foreach ($rows as $i => $row) {
-			$rowColumns = [];
+			if ($row === null) {
+				$rowBuffer[ $i ] = $rowSeparatorLine;
+			} else {
+				$rowColumns = [];
 
-			foreach ($row as $column => $value) {
-				$rowColumns[] = $this->pad($value, $columnMaxLength[$column], ' ', $paddingTypes[$column]);
+				foreach ($row as $column => $value) {
+					$rowColumns[] = $this->pad($value, $columnMaxLength[ $column ], ' ', $paddingTypes[ $column ]);
+				}
+
+				$rowBuffer[ $i ] = $boxSet['line']['vertical'] . implode($boxSet['line']['vertical'],
+						$rowColumns) . $boxSet['line']['vertical'];
 			}
-
-			$rowBuffer[$i] = $boxSet['line']['vertical'] . implode($boxSet['line']['vertical'], $rowColumns) . $boxSet['line']['vertical'];
 		}
 
 		if ($this->useRowSeparator) {
-			$rowGlue = PHP_EOL . $boxSet['middle']['left'] . implode($boxSet['middle']['cross'], $separatorColumns) . $boxSet['middle']['right'] . PHP_EOL;
+			$rowGlue = PHP_EOL . $rowSeparatorLine . PHP_EOL;
 		} else {
 			// Make sure that if we don't use individual row separators that we have a divider between the headers and the content
-			/**
-			 * ╔═════════╦═══════╗
-			 * ║ Statistic     ║ Time taken ║
-			 * ╠═════════╬═══════╣
-			 * ║ nameLookup    ║          0 ║
-			 * ║ connect       ║          0 ║
-			 * ║ preTransfer   ║          0 ║
-			 * ║ startTransfer ║      0.109 ║
-			 * ║ total         ║      0.124 ║
-			 * ╚═════════╩═══════╝
-			 */
-			array_splice($rowBuffer, 1, 0, [$boxSet['middle']['left'] . implode($boxSet['middle']['cross'], $separatorColumns) . $boxSet['middle']['right']]);
+
+			// ╔═════════════════╦══════════════╗
+			// ║ Statistic     ║ Time taken ║
+			// ╠═════════════════╬══════════════╣
+			// ║ nameLookup    ║          0 ║
+			// ║ connect       ║          0 ║
+			// ║ preTransfer   ║          0 ║
+			// ║ startTransfer ║      0.109 ║
+			// ╠═════════════════╬══════════════╣
+			// ║ total         ║      0.124 ║
+			// ╚═════════════════╩══════════════╝
+
+			array_splice($rowBuffer, 1, 0, [$rowSeparatorLine]);
 
 			$rowGlue = PHP_EOL;
 		}
@@ -318,10 +339,10 @@ class Table extends Module {
 	}
 
 	public function setHeaderCallback($headerCallback) {
-	    $this->headerCallback = $headerCallback;
+		$this->headerCallback = $headerCallback;
 
-	    return $this;
-    }
+		return $this;
+	}
 
 	/**
 	 * @param int $debugLevel
