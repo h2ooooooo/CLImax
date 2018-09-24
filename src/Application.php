@@ -738,6 +738,9 @@ abstract class Application
 				}
 			}
 		}
+		
+		// Replace "reset" colours with reset colours for this particular colour
+		$output = str_replace(DebugColour::reset(), DebugColour::reset($colour, $backgroundColour), $output);
 
 		if ($pad && !Application::$disableMessagePadding) {
 			$outputSplit = explode(PHP_EOL, $output);
