@@ -321,7 +321,10 @@ class Table extends Module {
 	 * @author https://gist.github.com/nebiros/226350
 	 */
 	public function pad($input, $length, $padString = null, $type = null) {
-		//$diff = self::stringLength( $input ) - mb_strlen( $input );
+		// str_pad uses strlen but we know that ANSI characters aren't going to be printed,
+		// so let's strip them to get the REAL length we want to pad the string
+		// TODO: Make custom pad function that can do this as well as work with unicode
+		$length += strlen($input) - self::stringLength($input);
 
 		return str_pad($input, $length, $padString, $type);
 	}
