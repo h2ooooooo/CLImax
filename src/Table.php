@@ -203,7 +203,7 @@ class Table extends Module {
 			}
 
 			foreach ($rows as $key => &$row) {
-				$row[$column] = DebugColour::colourValue($row[$column]);
+				DebugColour::colourValue($row[$column]);
 			}
 
 			unset($row);
