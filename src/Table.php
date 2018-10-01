@@ -190,20 +190,30 @@ class Table extends Module {
 				$isCallable = is_callable($formats[$column]);
 
 				foreach ($rows as &$row) {
-					$value = $row[$column];
-
-					if ($isCallable) {
-						$row[$column] = call_user_func($formats[$column], $value);
-					} else {
-						$row[$column] = sprintf($formats[$column], $value);
+					foreach ($row as &$rowValue) {
+						if ($isCallable) {
+							$rowValue = call_user_func($formats[ $column ], $rowValue);
+						} else {
+							$rowValue = sprintf($formats[ $column ], $rowValue);
+						}
 					}
+
+					unset($rowValue);
 				}
 
 				unset($row);
 			}
+		}
 
-			foreach ($rows as $key => &$row) {
-				DebugColour::colourValue($row[$column]);
+		if (!empty($rows)) {
+			foreach ($rows as &$row) {
+				if (!empty($row)) {
+					foreach ($row as &$rowValue) {
+						$rowValue = DebugColour::colourValue($rowValue);
+					}
+
+					unset($rowValue);
+				}
 			}
 
 			unset($row);
