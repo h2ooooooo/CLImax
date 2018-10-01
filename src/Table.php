@@ -193,16 +193,20 @@ class Table extends Module {
 					$value = $row[$column];
 
 					if ($isCallable) {
-						$value = call_user_func($formats[$column], $value);
+						$row[$column] = call_user_func($formats[$column], $value);
 					} else {
-						$value = sprintf($formats[$column], $value);
+						$row[$column] = sprintf($formats[$column], $value);
 					}
-
-					$row[$column] = $value;
 				}
 
 				unset($row);
 			}
+
+			foreach ($rows as $key => &$row) {
+				$row[$column] = DebugColour::colourValue($row[$column]);
+			}
+
+			unset($row);
 		}
 
 		$rows = array_merge([$headerColumns], $rows);

@@ -52,6 +52,26 @@ class DebugColour {
 	const STYLE_HIDDEN = 8; // 	Set "hidden" attribute
 
 	/**
+	 * @param mixed $value The input value to colour based on contents/type
+	 *
+	 * @return string|mixed The DebugColour enclosed output (OR the default, if no colour has been added)
+	 */
+	public static function colourValue($value) {
+		if (is_bool($value)) {
+			return DebugColour::enclose(
+				$value ? 'TRUE' : 'FALSE',
+				$value ? DebugColour::LIGHT_GREEN : DebugColour::LIGHT_RED
+			);
+		} else if (is_int($value) || is_float($value)) {
+			return DebugColour::enclose($value, DebugColour::LIGHT_BLUE);
+		} else if (is_string($value)) {
+			return DebugColour::enclose($value, DebugColour::LIGHT_MAGENTA);
+		}
+
+		return $value;
+	}
+
+	/**
 	 * @param int $textColour
 	 * @param int $backgroundColour
 	 * @param int $textStyle
