@@ -7,6 +7,8 @@
 
 namespace CLImax;
 
+use CLImax\Enum\SizeType;
+
 /**
  * A simple object that contains the rows and the columns of the CLI prompt
  */
