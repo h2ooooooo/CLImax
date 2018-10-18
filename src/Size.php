@@ -149,13 +149,3 @@ class Size extends Module {
 
     }
 }
-
-/**
- * Class SizeType
- * @package CLImax
- */
-class SizeType {
-    const ROWS = 1;
-    const COLUMNS = 2;
-    const BOTH = 3; //ROWS & COLUMNS
-}

@@ -7,6 +7,10 @@
 
 namespace CLImax;
 
+use CLImax\Enum\QuestionDisplay;
+use CLImax\Enum\QuestionLayoutStyle;
+use CLImax\Enum\QuestionReturn;
+use CLImax\Enum\QuestionStyle;
 use Seld\CliPrompt\CliPrompt;
 use Symfony\Component\Process\Process;
 
@@ -114,6 +118,8 @@ class Question extends Module {
 	 *        bool 'mask' Whether or not the answer should be hidden (masked)
 	 *
 	 * @return string The answer to the question
+     *
+     * @throws \Exception
 	 */
 	public function ask( $question, $options = null ) {
 		$defaultOptions = array(
@@ -499,84 +505,4 @@ class Question extends Module {
 			'canBeBlank'          => true
 		) );
 	}
-}
-
-/**
- * Class QuestionStyle
- * @package CLImax
- */
-class QuestionStyle {
-	/**
-	 * Consider the following array of possible choices:
-	 *     array(
-	 *         'foo' => 'oof',
-	 *           'bar' => 'rab',
-	 *           'something' => 'else'
-	 *     )
-	 */
-
-	/**
-	 * NUMBERS would output:
-	 *     [1] oof
-	 *     [2] rab
-	 *     [3] else
-	 * and the possible answers are 1/2/3
-	 */
-	const NUMBERS = 1;
-
-	/**
-	 * KEYS would output:
-	 *     [foo      ] oof
-	 *     [bar      ] rab
-	 *     [something] else
-	 * and the possible answers are oof/rab/something
-	 */
-	const KEYS = 2;
-
-	/**
-	 * TODO: What do?
-	 */
-	const NUMBERS_ACCEPT_KEYS = 3;
-
-	/**
-	 * NUMBERS would output:
-	 *     oof
-	 *     rab
-	 *     else
-	 * and the possible answers are oof/rab/else
-	 */
-	const VALUES = 4;
-}
-
-/**
- * Class QuestionLayoutStyle
- * @package CLImax
- */
-class QuestionLayoutStyle {
-	const GRID = 1; //Compact view to use the whole CLI width to output questions - this is a TODO!
-	const VERTICAL_LIST = 2; //Regular view where each option has its own line
-}
-
-/**
- * Class QuestionDisplay
- * @package CLImax
- */
-class QuestionDisplay {
-	/**
-	 * Consider the following array as the possible choices: array('foo' => 'bar')
-	 */
-	const VALUE = 1; //Will return the value of the option chosen in the choices array, eg. bar
-	const KEY = 2; //Will return the value of the option chosen in the choices array, eg. foo
-}
-
-/**
- * Class QuestionReturn
- * @package CLImax
- */
-class QuestionReturn {
-	/**
-	 * Consider the following array as the possible choices: array('foo' => 'bar')
-	 */
-	const VALUE = 1; //Will return the value of the option chosen in the choices array, eg. bar
-	const KEY = 2; //Will return the value of the option chosen in the choices array, eg. foo
 }

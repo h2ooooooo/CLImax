@@ -7,6 +7,9 @@
 
 namespace CLImax;
 
+use CLImax\Enum\ClearDisplayType;
+use CLImax\Enum\ClearInLineType;
+
 /**
  * Class Clear
  * @package CLImax
@@ -60,24 +63,4 @@ class Clear extends Module {
 
 		return $this;
 	}
-}
-
-/**
- * Class ClearDisplayType
- * @package CLImax
- */
-class ClearDisplayType {
-	const FROM_CURSOR_TO_END = 0;
-	const FROM_CURSOR_TO_BEGINNING = 1;
-	const ENTIRE_SCREEN = 2;
-}
-
-/**
- * Class ClearInLineType
- * @package CLImax
- */
-class ClearInLineType {
-	const FROM_CURSOR_TO_END = 0;
-	const FROM_CURSOR_TO_BEGINNING = 1;
-	const ENTIRE_LINE = 2;
 }
