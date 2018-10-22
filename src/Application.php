@@ -7,8 +7,6 @@
 
 namespace CLImax;
 
-use CLImax\Backtrace\DebugBacktrace;
-
 /**
  * @property \CLImax\Size                     $size        A size object defining the size of the CLI prompt
  * @property \CLImax\Environments\Environment $environment The currently chosen environment
@@ -139,6 +137,15 @@ abstract class Application
 
     protected $disableAnsi = false;
 
+	/**
+	 * Checks whether we're in a CLI
+	 *
+	 * @return bool
+	 */
+    public static function isCli() {
+    	return php_sapi_name() === 'cli';
+    }
+
     /**
      * @param int        $debugLevel       Which debug level to start the script on - if null, it will default to
      *                                     $defaults->debugLevel.
@@ -222,10 +229,6 @@ abstract class Application
         $defaultsOverride = null,
         $disableAnsi = false
     ) {
-        if (!defined('STDIN')) {
-            throw new \Exception('CLImax\Application\'s can only run in a command line using PHP-CLI');
-        }
-
         $this->setEnvironment($environmentClass);
 
         if ($defaultsOverride !== null) {
@@ -349,7 +352,11 @@ abstract class Application
      */
     public function __destruct()
     {
-        if ($this->showPaddingBanners() && defined('STDIN')) {
+	    if (!static::isCli()) {
+		    return;
+	    }
+
+        if ($this->showPaddingBanners()) {
             if (!empty($this->startTime)) {
                 $seconds = microtime(true) - $this->startTime;
                 $minutes = 0;
@@ -462,11 +469,18 @@ abstract class Application
             $this->printText($debugLevel, substr($padLine, 0, -2), $colour, $backgroundColour, '', false);
         }
 
-        echo PHP_EOL;
+	    $this->newLine();
 
         $this->justPrintedLine = true;
 
         return $this; // For chaining
+    }
+
+	/**
+	 * Outputs a new line
+	 */
+    public function newLine() {
+    	$this->outputText(PHP_EOL);
     }
 
     /**
@@ -626,7 +640,11 @@ abstract class Application
         $this->printText($debugLevel, $output, $colour, $backgroundColour, $prependText,
             $printTime !== null ? $printTime : $this->justPrintedLine);
 
-        echo PHP_EOL;
+        if (ob_get_level()) {
+	        ob_flush();
+        }
+
+        $this->newLine();
 
         $this->justPrintedLine = true;
 
@@ -734,7 +752,7 @@ abstract class Application
      *
      * @return Application A reference to the application class for chaining
      */
-    private function internalDebug(
+    protected function internalDebug(
         $debugLevel,
         $output,
         $colour = null,
