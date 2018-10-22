@@ -156,6 +156,20 @@ class Question extends Module {
 					return null;
 				}
 
+                if ($value !== null && $value !== false) {
+                    if ( ! empty($options['cast'])) {
+                        @settype($value, $options['cast']);
+                    }
+
+                    if ( ! empty($options['callback'])) {
+                        $value = call_user_func($options['callback'], $value);
+
+                        if ($value === false || $value === null) {
+                            $value = null;
+                        }
+                    }
+                }
+
 				return $value;
 			}
 		}
