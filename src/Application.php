@@ -137,6 +137,9 @@ abstract class Application
 
     protected $disableAnsi = false;
 
+    /** @var OutputPlugin[] */
+    protected $outputPlugins = [];
+
 	/**
 	 * Checks whether we're in a CLI
 	 *
@@ -784,6 +787,11 @@ abstract class Application
             }
         }
 
+        // Mutate output with our output plugins
+        foreach ($this->outputPlugins as $outputPlugin) {
+            $output = $outputPlugin->mutateOutput($output);
+        }
+
         // Replace "reset" colours with reset colours for this particular colour
         $output = str_replace(DebugColour::reset(), DebugColour::reset($colour, $backgroundColour), $output);
 
@@ -1324,5 +1332,18 @@ abstract class Application
      */
     public function getModuleClasses() {
         return $this->moduleClasses;
+    }
+
+    /**
+     * @param string $format The format with the content replaced by %s (eg. "{{%s}}" would call the callback with whatever is inside of the double brackets)
+     *
+     * @param callable $pluginCallback The callback to be called to mutate text
+     *
+     * @return $this An instance of the application for chaining
+     */
+    public function addOutputPlugin($format, $pluginCallback) {
+        $this->outputPlugins[] = new OutputPlugin($format, $pluginCallback);
+
+        return $this;
     }
 }
