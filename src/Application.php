@@ -1063,7 +1063,7 @@ abstract class Application
         $microUpdateInterval = $spinnerUpdateIntervalSeconds * 1000000;
         $microSecondsSleepTime = $seconds * 1000000;
 
-        if ($microSecondsSleepTime > $microUpdateInterval) {
+        if (!empty($spinner) && $microSecondsSleepTime > $microUpdateInterval) {
             $sleepTimeRemaining = $microSecondsSleepTime;
 
             $spinner = $this->getSpinner($spinner);
