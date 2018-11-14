@@ -1049,7 +1049,7 @@ abstract class Application
      * Sleeps for X amount of seconds
      *
      * @param float $seconds The amount of seconds to sleep for (0.1 would be 1/10th of a second)
-     * @param string $spinner The spinner to use when animating
+     * @param string $spinner The spinner to use when animating (or an empty() value if you don't want to use a spinner)
      * @param float $spinnerUpdateIntervalSeconds
      *
      * @return \CLImax\Application A reference to the application class for chaining
