@@ -152,7 +152,7 @@ abstract class Application {
 		$disableAnsi = false
 	) {
 		$this->spinners = require_once(__DIR__ . '/Lib/spinners.php');
-		
+
 		$this->setEnvironment($environmentClass);
 
 		if ($defaultsOverride !== null) {
@@ -392,9 +392,16 @@ abstract class Application {
 						$microSeconds), 0, $this->timeDecimals) : '') . ' ');
 		}
 
-		$this->outputText(DebugColour::getColourCode($colour,
-				$backgroundColour) . (! empty($prependText) ? $prependText . ': ' : '') . utf8_decode(print_r($output,
-				true)) . DebugColour::Reset());
+		$outputRaw = print_r($output, true);
+
+		if ($this->decodeUtf8()) {
+			$outputRaw = utf8_decode($outputRaw);
+		}
+
+		$this->outputText(
+			DebugColour::getColourCode($colour, $backgroundColour) .
+			(! empty($prependText) ? $prependText . ': ' : '') .
+			$outputRaw . DebugColour::Reset());
 
 		if ($debugLevel === DebugLevel::FATAL) {
 			// We're bypassing $this->internalDebug, so we won't get our newline
@@ -1110,7 +1117,12 @@ abstract class Application {
 					$this->clear->lastLine();
 				}
 
-				$spinnerCharacter = utf8_encode(mb_substr($spinner, $spinnerIndex, 1));
+				$spinnerCharacter = mb_substr($spinner, $spinnerIndex, 1);
+
+				if ($this->decodeUtf8()) {
+					// Since we encode utf8 we want to make sure this isn't already utf8 encoded
+					$spinner = utf8_encode($spinner);
+				}
 
 				$this->info(sprintf(
 					'Sleeping.. %s | %s',
@@ -1294,5 +1306,14 @@ abstract class Application {
 		$this->outputPlugins[] = new OutputPlugin($format, $pluginCallback);
 
 		return $this;
+	}
+
+	/**
+	 * Whether or not to decode utf8 in the application - use ApplicationUtf8 if you want this done automatically
+	 *
+	 * @return bool
+	 */
+	public function decodeUtf8() {
+		return true;
 	}
 }
