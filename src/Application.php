@@ -384,11 +384,6 @@ abstract class Application {
 						$microSeconds), 0, $this->timeDecimals) : '') . ' ');
 		}
 
-		// Mutate output with our output plugins
-		foreach ($this->outputPlugins as $outputPlugin) {
-			$output = $outputPlugin->mutateOutput($output);
-		}
-
 		// Replace "reset" colours with reset colours for this particular colour
 		$output = str_replace(DebugColour::reset(), DebugColour::reset($colour, $backgroundColour), $output);
 
@@ -419,6 +414,11 @@ abstract class Application {
 	 * @return \CLImax\Application A reference to the application class for chaining
 	 */
 	public function outputText($text) {
+		// Mutate output with our output plugins
+		foreach ($this->outputPlugins as $outputPlugin) {
+			$text = $outputPlugin->mutateOutput($text);
+		}
+
 		if ($this->disableAnsi) {
 			$text = preg_replace('~\x1b\[[0-9;]*[a-zA-Z]~', '', $text);
 		}
