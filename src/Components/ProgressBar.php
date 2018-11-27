@@ -8,6 +8,8 @@
 
 namespace CLImax\Components;
 
+use CLImax\DebugLevel;
+
 class ProgressBar {
 	protected $application;
 
