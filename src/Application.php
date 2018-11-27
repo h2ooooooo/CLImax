@@ -292,14 +292,6 @@ abstract class Application {
 			}
 		}
 
-		// Mutate output with our output plugins
-		foreach ($this->outputPlugins as $outputPlugin) {
-			$output = $outputPlugin->mutateOutput($output);
-		}
-
-		// Replace "reset" colours with reset colours for this particular colour
-		$output = str_replace(DebugColour::reset(), DebugColour::reset($colour, $backgroundColour), $output);
-
 		if ($pad && ! Application::$disableMessagePadding) {
 			$outputSplit = explode(PHP_EOL, $output);
 
@@ -391,6 +383,14 @@ abstract class Application {
 			$this->outputText(DebugColour::getColourCode(DebugColour::LIGHT_GRAY) . date('H:i:s') . ($this->timeDecimals > 0 ? ',' . substr(sprintf('%0' . $this->timeDecimals . 's',
 						$microSeconds), 0, $this->timeDecimals) : '') . ' ');
 		}
+
+		// Mutate output with our output plugins
+		foreach ($this->outputPlugins as $outputPlugin) {
+			$output = $outputPlugin->mutateOutput($output);
+		}
+
+		// Replace "reset" colours with reset colours for this particular colour
+		$output = str_replace(DebugColour::reset(), DebugColour::reset($colour, $backgroundColour), $output);
 
 		$outputRaw = print_r($output, true);
 
