@@ -279,7 +279,10 @@ class Question extends Module {
 			throw new \Exception('displayCallback cannot be overwritten');
 		}
 
-		$selectedFormat = DebugColour::buildString(DebugColour::LIGHT_GREEN)->bold()->write('[X]')->reset()->write(' %s')->toString();
+		//$tick = 'X';
+		$tick = '✓';
+		
+		$selectedFormat = DebugColour::buildString(DebugColour::LIGHT_GREEN)->bold()->write('[' . $tick . ']')->reset()->write(' %s')->toString();
 		$deselectedFormat = DebugColour::buildString(DebugColour::LIGHT_RED)->bold()->write('[ ]')->reset()->write(' %s')->toString();
 
 		do {
