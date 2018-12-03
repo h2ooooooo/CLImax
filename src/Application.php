@@ -406,6 +406,24 @@ abstract class Application {
 		return $this; // For chaining
 	}
 
+    /**
+     * Mutates text with output plugins added by the addOutputPlugin() method
+     *
+     * @param string $text The text we want to run our output plugins on
+     *
+     * @return string The finalized string after the output plugins have done their mutations
+     */
+	public function mutateTextWithOutputPlugins($text) {
+	    if (!empty($this->outputPlugins)) {
+            // Mutate output with our output plugins
+            foreach ($this->outputPlugins as $outputPlugin) {
+                $text = $outputPlugin->mutateOutput($text);
+            }
+        }
+
+        return $text;
+    }
+
 	/**
 	 * Simply outputs the text (maybe it can do something else here in the future, like adding text to a log
 	 *
@@ -414,11 +432,8 @@ abstract class Application {
 	 * @return \CLImax\Application A reference to the application class for chaining
 	 */
 	public function outputText($text) {
-		// Mutate output with our output plugins
-		foreach ($this->outputPlugins as $outputPlugin) {
-			$text = $outputPlugin->mutateOutput($text);
-		}
-
+        $text = $this->mutateTextWithOutputPlugins($text);
+        
 		if ($this->disableAnsi) {
 			$text = preg_replace('~\x1b\[[0-9;]*[a-zA-Z]~', '', $text);
 		}
