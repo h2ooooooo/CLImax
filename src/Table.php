@@ -451,12 +451,9 @@ class Table extends Module {
      */
     public function stringLength($string)
     {
-        $string = self::removeAnsiCodes($string);
+        $string = $this->application->mutateTextWithOutputPlugins($string);
 
-        // something goes wrong here, probably because the cmd can't show unicode c
-        //if (function_exists('mb_strlen')) {
-        //return mb_strlen($string);
-        //}
+        $string = self::removeAnsiCodes($string);
 
         return strlen($string);
     }
