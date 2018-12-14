@@ -313,10 +313,11 @@ class DebugColour {
      * Escape the escape sequences
      *
      * @param string $string
+     * @param bool $replaceColours
      *
      * @return string
      */
-    public static function escapeSequences($string) {
+    public static function escapeSequences($string, $replaceColours = false) {
         $colourReplacements = [
             self::STANDARD => 'STANDARD',
             self::BLACK => 'BLACK',
@@ -337,16 +338,16 @@ class DebugColour {
             self::WHITE	  => 'WHITE'
         ];
 
-        $string = preg_replace_callback('~\\033\[(.+?)m~', function($match) {
+        $string = preg_replace_callback('~\\033\[(.+?)m~', function($match) use ($replaceColours, $colourReplacements) {
             $matchSplit = explode(';', $match[1]);
 
-            foreach ($matchSplit as &$matchPart) {
-                if (isset($colourReplacements[$matchPart])) {
-                    //$matchPart = $colourReplacements[$matchPart];
+            if ($replaceColours) {
+                foreach ($matchSplit as $key => $matchPart) {
+                    if (isset($colourReplacements[ $matchPart ])) {
+                        $matchSplit[$key] = $colourReplacements[ $matchPart ];
+                    }
                 }
             }
-
-            unset($matchPart);
 
             return sprintf('\\033[%sm', implode(';', $matchSplit));
         }, $string);

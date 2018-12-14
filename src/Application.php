@@ -7,6 +7,8 @@
 
 namespace CLImax;
 
+use CLImax\Enum\Spinner;
+
 /**
  * @property \CLImax\Size                     $size             A size object defining the size of the CLI prompt
  * @property \CLImax\Environments\Environment $environment      The currently chosen environment
@@ -129,7 +131,6 @@ abstract class Application {
          */
         'componentFactory'      => 'ComponentFactory',
     );
-    private $spinners;
 
     /**
      * The constructor - parses arguments and saves the starting
@@ -151,8 +152,6 @@ abstract class Application {
         $defaultsOverride = null,
         $disableAnsi = false
     ) {
-        $this->spinners = require_once(__DIR__ . '/Lib/spinners.php');
-
         $this->setEnvironment($environmentClass);
 
         if ($defaultsOverride !== null) {
@@ -383,7 +382,7 @@ abstract class Application {
         $this->printText($debugLevel, $output, $colour, $backgroundColour, $prependText,
             $printTime !== null ? $printTime : $this->justPrintedLine);
 
-        if (ob_get_level()) {
+        while (ob_get_level()) {
             ob_flush();
         }
 
@@ -429,23 +428,38 @@ abstract class Application {
             $microTime    = microtime(true);
             $microSeconds = substr($microTime, strpos($microTime, '.') + 1);
             $this->outputText(DebugColour::getColourCode(DebugColour::LIGHT_GRAY) . date('H:i:s') . ($this->timeDecimals > 0 ? ',' . substr(sprintf('%0' . $this->timeDecimals . 's',
-                        $microSeconds), 0, $this->timeDecimals) : '') . ' ');
+                        $microSeconds), 0, $this->timeDecimals) : '') . ' ', false);
         }
 
-        // Replace "reset" colours with reset colours for this particular colour
-        $output = str_replace(DebugColour::reset(), DebugColour::reset($colour, $backgroundColour), $output);
-
+        // Make sure we can print the debug output
         $outputRaw = print_r($output, true);
 
-        if ($this->decodeUtf8()) {
-            $outputRaw = utf8_decode($outputRaw);
+        // Build the output text
+        $outputText = DebugColour::getColourCode($colour, $backgroundColour);
+
+        if (!empty($prependText)) {
+            $outputText .= $prependText . ': ';
         }
 
-        $this->outputText(
-            DebugColour::getColourCode($colour, $backgroundColour) .
-            (! empty($prependText) ? $prependText . ': ' : '') .
-            $outputRaw . DebugColour::Reset());
+        $outputText .= $outputRaw;
 
+        // Mutate the text
+        $outputText = $this->mutateTextWithOutputPlugins($outputText, $colour, $backgroundColour);
+
+        // Replace "reset" colours with reset colours for this particular colour
+        $outputText = str_replace(DebugColour::reset(), DebugColour::reset($colour, $backgroundColour), $outputText);
+
+        // Add a reset tag at the end to clear the colour for the next line
+        $outputText .= DebugColour::reset();
+
+        if ($this->decodeUtf8()) {
+            $outputText = utf8_decode($outputText);
+        }
+
+        // Output the text
+        $this->outputText($outputText, false);
+
+        // If it's a fatal error let's exit straight away
         if ($debugLevel === DebugLevel::FATAL) {
             // We're bypassing $this->internalDebug, so we won't get our newline
             $this->exitFatal(PHP_EOL);
@@ -458,14 +472,16 @@ abstract class Application {
      * Mutates text with output plugins added by the addOutputPlugin() method
      *
      * @param string $text The text we want to run our output plugins on
+     * @param int    $textColour       The text colour being printed on the line, if available (from the DebugColour class)
+     * @param int    $backgroundColour The background colour being printed on the line, if available (from the DebugColour class)
      *
      * @return string The finalized string after the output plugins have done their mutations
      */
-    public function mutateTextWithOutputPlugins($text) {
+    public function mutateTextWithOutputPlugins($text, $textColour = null, $backgroundColour = null) {
         if (!empty($this->outputPlugins)) {
             // Mutate output with our output plugins
             foreach ($this->outputPlugins as $outputPlugin) {
-                $text = $outputPlugin->mutateOutput($text);
+                $text = $outputPlugin->mutateOutput($text, $textColour, $backgroundColour);
             }
         }
 
@@ -476,11 +492,14 @@ abstract class Application {
      * Simply outputs the text (maybe it can do something else here in the future, like adding text to a log
      *
      * @param string $text The text to be output
+     * @param bool $mutateTextWithOutputPlugins
      *
      * @return \CLImax\Application A reference to the application class for chaining
      */
-    public function outputText($text) {
-        $text = $this->mutateTextWithOutputPlugins($text);
+    public function outputText($text, $mutateTextWithOutputPlugins = true) {
+        if ($mutateTextWithOutputPlugins) {
+            $text = $this->mutateTextWithOutputPlugins($text);
+        }
 
         if ($this->disableAnsi) {
             $text = preg_replace('~\x1b\[[0-9;]*[a-zA-Z]~', '', $text);
@@ -1110,20 +1129,17 @@ abstract class Application {
         return $this->internalDebug(DebugLevel::DEBUG, $output, $colour, $backgroundColour, $prependText, $pad);
     }
 
-    public function getSpinners() {
-        return array_keys($this->spinners);
-    }
-
     /**
      * Sleeps for X amount of seconds
      *
      * @param float  $seconds The amount of seconds to sleep for (0.1 would be 1/10th of a second)
-     * @param string $spinner The spinner to use when animating (or an empty() value if you don't want to use a spinner)
+     * @param string $spinner The spinner sprite to use when animating (or an empty() value if you don't want to use a
+     *                        spinner) - see the \CLImax\Enum\Spinner class
      * @param float  $spinnerUpdateIntervalSeconds
      *
      * @return \CLImax\Application A reference to the application class for chaining
      */
-    public function sleep($seconds, $spinner = 'simple', $spinnerUpdateIntervalSeconds = 0.1) {
+    public function sleep($seconds, $spinner = Spinner::SIMPLE, $spinnerUpdateIntervalSeconds = 0.1) {
         if ($seconds <= 0) {
             return $this;
         }
@@ -1134,8 +1150,12 @@ abstract class Application {
         if ( ! empty($spinner) && $microSecondsSleepTime > $microUpdateInterval) {
             $sleepTimeRemaining = $microSecondsSleepTime;
 
-            $spinner       = $this->getSpinner($spinner);
-            $spinnerAmount = mb_strlen($spinner);
+            if ($this->decodeUtf8()) {
+                // Since we encode utf8 we want to make sure this isn't already utf8 encoded
+                $spinner = utf8_encode($spinner);
+            }
+
+            $spinnerAmount = mb_strlen($spinner, 'utf-8');
             $spinnerIndex  = 0;
             $iteration     = 0;
 
@@ -1146,12 +1166,7 @@ abstract class Application {
                     $this->clear->lastLine();
                 }
 
-                $spinnerCharacter = mb_substr($spinner, $spinnerIndex, 1);
-
-                if ($this->decodeUtf8()) {
-                    // Since we encode utf8 we want to make sure this isn't already utf8 encoded
-                    $spinner = utf8_encode($spinner);
-                }
+                $spinnerCharacter = mb_substr($spinner, $spinnerIndex, 1, 'utf-8');
 
                 $this->info(sprintf(
                     'Sleeping.. %s | %s',
@@ -1177,14 +1192,6 @@ abstract class Application {
         }
 
         return $this;
-    }
-
-    private function getSpinner($spinner = 'simple') {
-        if ( ! isset($this->spinners[ $spinner ])) {
-            throw new \Exception(sprintf('Spinner "%s" not found', $spinner));
-        }
-
-        return $this->spinners[ $spinner ];
     }
 
     private function secondsToTime($seconds) {

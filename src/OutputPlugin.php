@@ -32,12 +32,14 @@ class OutputPlugin {
 
     /**
      * @param string $output
+     * @param int    $textColour       The text colour being printed on the line, if available (from the DebugColour class)
+     * @param int    $backgroundColour The background colour being printed on the line, if available (from the DebugColour class)
      *
      * @return string
      */
-    public function mutateOutput($output) {
-        return preg_replace_callback($this->regexPattern, function($matches) {
-            return call_user_func($this->callback, $matches[1]);
+    public function mutateOutput($output, $textColour = null, $backgroundColour = null) {
+        return preg_replace_callback($this->regexPattern, function($matches) use ($textColour, $backgroundColour) {
+            return call_user_func($this->callback, $matches[1], $textColour, $backgroundColour);
         }, $output);
     }
 }
