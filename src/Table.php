@@ -30,6 +30,8 @@ class Table extends Module {
 	protected $formatNumbers = false;
 	protected $formatNumbersDecimals = 0;
 
+	protected $includeHeaders = true;
+
 
 	/**
 	 * Table constructor.
@@ -171,6 +173,19 @@ class Table extends Module {
 	public function hasRows()
 	{
 		return !empty($this->rows);
+	}
+
+	/**
+	 * Sets whether or not to include headers in the output
+	 *
+	 * @param array $includeHeaders
+	 *
+	 * @return $this
+	 */
+	public function setIncludeHeaders($includeHeaders) {
+		$this->includeHeaders = $includeHeaders;
+
+		return $this;
 	}
 
 	/**
@@ -319,7 +334,9 @@ class Table extends Module {
 			unset($row);
 		}
 
-		$rows = array_merge([$headerColumns], $rows);
+		if ($this->includeHeaders && !empty($headerColumns)) {
+			$rows = array_merge([$headerColumns], $rows);
+		}
 
 		// Figure out what the max column lengths are
 		foreach ($rows as &$row) {
