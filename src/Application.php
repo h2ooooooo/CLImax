@@ -132,6 +132,8 @@ abstract class Application {
         'componentFactory'      => 'ComponentFactory',
     );
 
+	protected $automaticallyFlushBuffer = true;
+
     /**
      * The constructor - parses arguments and saves the starting
      * time of the script so we can check how long the entire
@@ -382,8 +384,10 @@ abstract class Application {
         $this->printText($debugLevel, $output, $colour, $backgroundColour, $prependText,
             $printTime !== null ? $printTime : $this->justPrintedLine);
 
-        while (ob_get_level()) {
-            ob_flush();
+        if ($this->automaticallyFlushBuffer) {
+	        while (ob_get_level()) {
+		        ob_flush();
+	        }
         }
 
         $this->newLine();
@@ -1352,4 +1356,18 @@ abstract class Application {
     public function decodeUtf8() {
         return true;
     }
+
+	/**
+	 * Change whether or not all buffers should automatically be flushed when outputting
+	 *
+	 * @param bool $automaticallyFlushBuffer
+	 *
+	 * @return $this
+	 */
+	public function automaticallyFlushBuffer($automaticallyFlushBuffer) {
+		$this->automaticallyFlushBuffer = $automaticallyFlushBuffer;
+
+		return $this;
+	}
+
 }
