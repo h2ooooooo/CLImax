@@ -23,7 +23,7 @@ class OutputPlugin {
      */
     public function __construct($format, $callback, $multiLine = false) {
         $format = preg_quote($format, '~');
-        $format = str_replace('%s', '(.+?)', $format);
+        $format = str_replace('%s', '(.*?)', $format);
 
         $this->regexPattern = '~' . $format . '~' . ($multiLine ? 's' : '');
 
