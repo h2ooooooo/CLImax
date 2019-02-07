@@ -386,7 +386,7 @@ abstract class Application {
 
         if ($this->automaticallyFlushBuffer) {
 	        while (ob_get_level()) {
-		        ob_flush();
+		        ob_end_flush();
 	        }
         }
 
