@@ -201,6 +201,24 @@ abstract class Application {
     }
 
     /**
+     * Checks whether the current application is an utf8 application
+     *
+     * @return bool
+     */
+	public function isUtf8() {
+		return false;
+	}
+
+	/**
+	 * Checks whether or not the current cli can actually prompt (if you run it from a browser this will return false)
+     *
+     * @return bool
+	 */
+    public function canPrompt() {
+	    return (php_sapi_name() === 'cli');
+    }
+
+    /**
      * Outputs the start banner
      */
     public function outputStartBanner() {
@@ -386,7 +404,7 @@ abstract class Application {
 
         if ($this->automaticallyFlushBuffer) {
 	        while (ob_get_level()) {
-		        ob_end_flush();
+		        ob_flush();
 	        }
         }
 

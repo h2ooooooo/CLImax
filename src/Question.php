@@ -180,66 +180,74 @@ class Question extends Module {
 			}
 		}
 
-		$response = null;
+		if ($this->application->canPrompt()) {
+			$response = null;
 
-		while (true) { // We'll break out during the loop
-			if ($options['mask']) {
-				$inputRead = CliPrompt::hiddenPrompt();
-			} else {
-				$inputRead = CliPrompt::prompt();
-			}
-
-			$inputRead = trim($inputRead);
-
-			if ($inputRead == '') {
-				if ($options['default'] !== null) {
-					$response = $options['default'];
-				} else if ($options['canBeBlank']) {
-					$response = '';
+			while (true) { // We'll break out during the loop
+				if ($options['mask']) {
+					$inputRead = CliPrompt::hiddenPrompt();
+				} else {
+					$inputRead = CliPrompt::prompt();
 				}
-			} else {
-				if ($options['possibleOptions'] !== null) {
-					if ($options['caseSensitive']) {
-						$found = array_search($inputRead, $options['possibleOptions']);
-					} else {
-						$found = array_search(strtolower($inputRead),
-							array_map('strtolower', $options['possibleOptions']));
-					}
-					if ($found !== false) {
-						$response = $options['possibleOptions'][ $found ];
+
+				$inputRead = trim($inputRead);
+
+				if ($inputRead == '') {
+					if ($options['default'] !== null) {
+						$response = $options['default'];
+					} else if ($options['canBeBlank']) {
+						$response = '';
 					}
 				} else {
-					$response = $inputRead;
-				}
-			}
-
-			if ($response !== null && $response !== false) {
-				if ( ! empty($options['cast'])) {
-					@settype($response, $options['cast']);
-				}
-
-				if ( ! empty($options['callback'])) {
-					$response = call_user_func($options['callback'], $response);
-
-					if ($response === false || $response === null) {
-						$response = null;
+					if ($options['possibleOptions'] !== null) {
+						if ($options['caseSensitive']) {
+							$found = array_search($inputRead, $options['possibleOptions']);
+						} else {
+							$found = array_search(strtolower($inputRead),
+								array_map('strtolower', $options['possibleOptions']));
+						}
+						if ($found !== false) {
+							$response = $options['possibleOptions'][ $found ];
+						}
+					} else {
+						$response = $inputRead;
 					}
 				}
+
+				if ($response !== null && $response !== false) {
+					if ( ! empty($options['cast'])) {
+						@settype($response, $options['cast']);
+					}
+
+					if ( ! empty($options['callback'])) {
+						$response = call_user_func($options['callback'], $response);
+
+						if ($response === false || $response === null) {
+							$response = null;
+						}
+					}
+				}
+
+				if ($response !== null) {
+					break;
+				} else {
+					$this->application->printText(DebugLevel::ALWAYS_PRINT, $questionFull, $options['textColour'],
+						$options['backgroundColour'], null, false);
+				}
 			}
 
-			if ($response !== null) {
-				break;
-			} else {
-				$this->application->printText(DebugLevel::ALWAYS_PRINT, $questionFull, $options['textColour'],
-					$options['backgroundColour'], null, false);
+			if ($response === null) {
+				$this->application->fatal('Could not read STDIN');
 			}
-		}
 
-		if ($response === null) {
-			$this->application->fatal('Could not read STDIN');
-		}
+			return $response;
+		} else {
+			if ( ! empty($options['default'])) {
+				return $options['default'];
+			}
 
-		return $response;
+			throw new \Exception(sprintf('Could not find "default" option and this cli does not support prompts'));
+		}
 	}
 
 	/**
@@ -278,9 +286,12 @@ class Question extends Module {
 		if (isset($options['displayCallback'])) {
 			throw new \Exception('displayCallback cannot be overwritten');
 		}
-
-		//$tick = 'X';
-		$tick = '✓';
+		
+		if ($this->application->isUtf8()) {
+			$tick = '✓';
+		} else {
+			$tick = 'X';
+		}
 		
 		$selectedFormat = DebugColour::buildString(DebugColour::LIGHT_GREEN)->bold()->write('[' . $tick . ']')->reset()->write(' %s')->toString();
 		$deselectedFormat = DebugColour::buildString(DebugColour::LIGHT_RED)->bold()->write('[ ]')->reset()->write(' %s')->toString();
