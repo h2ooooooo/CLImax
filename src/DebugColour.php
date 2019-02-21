@@ -394,4 +394,61 @@ class DebugColour {
 
 		return DebugColour::styleCode($styles);
 	}
+
+    /**
+     * @param string|array $json The raw JSON (or an array that can be converted to JSON)
+     *
+     * @note If an array is passed to $json, it will be converted using json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+     *
+     * @return string The CLI coloured JSON
+     *
+     * @see https://stackoverflow.com/a/7220510/247893 The regex, but converted from javascript
+     *
+     * @throws \Exception
+     */
+    public static function colourJson($json) {
+        if (is_array($json)) {
+            if (!function_exists('json_encode')) {
+                throw new \Exception(sprintf('An array was passed to DebugCOlour::colourJson, but the JSON extension was not found in your PHP installation'));
+            }
+
+            $json = json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        }
+
+        $regex = <<<REGEXP
+/("(\\\\u[a-zA-Z0-9]{4}|\\\\[^u]|[^\\\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/
+REGEXP;
+
+        return preg_replace_callback(
+            $regex,
+            function ($matches) {
+                $value  = $matches[0];
+
+                if ($value === 'null') {
+                    // The value is NULL
+                    return DebugColour::enclose($value, DebugColour::CYAN);
+                } else if ($value === 'false' || $value === 'true') {
+                    // The value is a boolean
+                    return DebugColour::enclose($value, DebugColour::LIGHT_YELLOW);
+                } else if (preg_match('/^"/', $value)) {
+                    if (preg_match('/:$/', $value)) {
+                        // The value is a JSON key
+                        return DebugColour::enclose($value, DebugColour::LIGHT_GREEN);
+                    } else {
+                        // The value is a JSON string in a value
+                        return DebugColour::enclose($value, DebugColour::GREEN);
+                    }
+                } else if (preg_match('~^\d+$~', $value)) {
+                    // The value is an integer
+                    return DebugColour::enclose($value, DebugColour::LIGHT_CYAN);
+                } else if (preg_match('~^\d+\.\d+$~', $value)) {
+                    // The value is a float
+                    return DebugColour::enclose($value, DebugColour::LIGHT_CYAN);
+                } else {
+                    return $value;
+                }
+            },
+            $json
+        );
+    }
 }
