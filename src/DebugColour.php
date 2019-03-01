@@ -58,7 +58,7 @@ class DebugColour {
 	 */
 	public static function getValueColour($value) {
 		if (is_null($value)) {
-			return DebugColour::BLACK;
+			return DebugColour::GRAY;
 		} else if (is_bool($value)) {
 			return $value ? DebugColour::LIGHT_GREEN : DebugColour::LIGHT_RED;
 		} else if (is_int($value) || is_float($value)) {
