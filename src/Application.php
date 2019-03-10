@@ -403,8 +403,10 @@ abstract class Application {
             $printTime !== null ? $printTime : $this->justPrintedLine);
 
         if ($this->automaticallyFlushBuffer) {
-	        while (ob_get_level()) {
-		        ob_flush();
+        	$i = 0;
+
+	        while ($i++  < 512 && ob_get_level()) {
+		        ob_end_flush();
 	        }
         }
 
