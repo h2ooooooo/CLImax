@@ -8,6 +8,7 @@
 namespace CLImax;
 
 use CLImax\Enum\Spinner;
+use CLImax\Plugins\AbstractPlugin;
 
 /**
  * @property \CLImax\Size                     $size             A size object defining the size of the CLI prompt
@@ -1390,4 +1391,10 @@ abstract class Application {
 		return $this;
 	}
 
+    /**
+     * @param \CLImax\Plugins\AbstractPlugin $plugin
+     */
+	public function registerPlugin(AbstractPlugin $plugin) {
+	    $plugin->register($this);
+    }
 }
