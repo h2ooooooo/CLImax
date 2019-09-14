@@ -95,20 +95,36 @@ class Size extends Module {
             if ( $this->application->os->isWindows() ) {
                 $rowsRaw = $this->getWindowsSize('height', $cacheSeed); // TODO: Get real rows
             } else {
-                exec( 'tput lines', $columnsRaw );
+                @exec( 'tput lines', $rowsRaw );
             }
 
-            $this->rows = ( ! empty( $rowsRaw ) ? (int) $rowsRaw : $this->application->environment->sizeRows );
+            if (!empty($rowsRaw)) {
+	            $rowsRaw = (int)$rowsRaw;
+
+            	if (empty($rowsRaw)) {
+		            $rowsRaw = null;
+	            }
+            }
+
+            $this->rows = ! empty( $rowsRaw ) ? (int) $rowsRaw : $this->application->environment->sizeRows;
         }
 
         if ( $whatToUpdate & SizeType::COLUMNS ) {
             if ( $this->application->os->isWindows() ) {
                 $columnsRaw = $this->getWindowsSize('width', $cacheSeed); // TODO: Get real columns
             } else {
-                exec( 'tput cols', $columnsRaw );
+                @exec( 'tput cols', $columnsRaw );
             }
 
-            $this->columns = ( ! empty( $columnsRaw ) ? (int) $columnsRaw : $this->application->environment->sizeColumns );
+	        if (!empty($columnsRaw)) {
+		        $columnsRaw = (int)$columnsRaw;
+
+		        if (empty($columnsRaw)) {
+			        $columnsRaw = null;
+		        }
+	        }
+
+	        $this->rows = ! empty( $columnsRaw ) ? (int) $columnsRaw : $this->application->environment->sizeColumns;
         }
 
         $this->lastUpdate = microtime( true );
@@ -124,22 +140,24 @@ class Size extends Module {
         if ($this->windowsSizeCacheSeed !== $cacheSeed) {
             $this->windowsSizeCacheSeed = $cacheSeed;
 
-            exec('mode', $modeOutput);
+            @exec('mode', $modeOutput);
 
-            $modeOutput = implode(PHP_EOL, $modeOutput);
+            if (!empty($modeOutput)) {
+	            $modeOutput = implode(PHP_EOL, $modeOutput);
 
-            if (preg_match_all('~^\s*(Lines|Columns):\s*(\d+)\s*$~mi', $modeOutput, $matches)) {
-                for ($i = 0, $len = count($matches[0]); $i < $len; $i++) {
-                    $key = $matches[1][$i];
-                    $value = $matches[2][$i];
-                    if ($matches[1][$i] === 'Lines') {
-                        $property = 'height';
-                    } else if ($matches[1][$i] === 'Columns') {
-                        $property = 'width';
-                    }
+	            if (preg_match_all('~^\s*(Lines|Columns):\s*(\d+)\s*$~mi', $modeOutput, $matches)) {
+		            for ($i = 0, $len = count($matches[0]); $i < $len; $i++) {
+			            $key   = $matches[1][ $i ];
+			            $value = $matches[2][ $i ];
+			            if ($matches[1][ $i ] === 'Lines') {
+				            $property = 'height';
+			            } else if ($matches[1][ $i ] === 'Columns') {
+				            $property = 'width';
+			            }
 
-                    $this->windowsSize[$property] = (int)$matches[2][$i];
-                }
+			            $this->windowsSize[ $property ] = (int) $matches[2][ $i ];
+		            }
+	            }
             }
         }
 
