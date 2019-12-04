@@ -95,7 +95,7 @@ class Size extends Module {
             if ( $this->application->os->isWindows() ) {
                 $rowsRaw = $this->getWindowsSize('height', $cacheSeed); // TODO: Get real rows
             } else {
-                @exec( 'tput lines', $rowsRaw );
+	            $rowsRaw = $this->getCommandOutput('tput lines');
             }
 
             if (!empty($rowsRaw)) {
@@ -113,7 +113,7 @@ class Size extends Module {
             if ( $this->application->os->isWindows() ) {
                 $columnsRaw = $this->getWindowsSize('width', $cacheSeed); // TODO: Get real columns
             } else {
-                @exec( 'tput cols', $columnsRaw );
+	            $columnsRaw = $this->getCommandOutput('tput cols');
             }
 
 	        if (!empty($columnsRaw)) {
@@ -124,10 +124,20 @@ class Size extends Module {
 		        }
 	        }
 
-	        $this->rows = ! empty( $columnsRaw ) ? (int) $columnsRaw : $this->application->environment->sizeColumns;
+	        $this->columns = ! empty( $columnsRaw ) ? (int) $columnsRaw : $this->application->environment->sizeColumns;
         }
 
         $this->lastUpdate = microtime( true );
+    }
+
+    private function getCommandOutput($command) {
+    	try {
+		    @exec($command, $output);
+	    } catch (\Exception $e) {
+    		$output = null;
+	    }
+
+    	return $output;
     }
 
     /**
@@ -140,7 +150,7 @@ class Size extends Module {
         if ($this->windowsSizeCacheSeed !== $cacheSeed) {
             $this->windowsSizeCacheSeed = $cacheSeed;
 
-            @exec('mode', $modeOutput);
+            $modeOutput = $this->getCommandOutput('mode');
 
             if (!empty($modeOutput)) {
 	            $modeOutput = implode(PHP_EOL, $modeOutput);
