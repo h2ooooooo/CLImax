@@ -59,7 +59,14 @@ class Table extends Module {
 	}
 
 	/**
-	 * @param $row
+	 * @return array
+	 */
+	public function popRow() {
+		return array_pop($this->rows);
+	}
+
+	/**
+	 * @param array $row
 	 *
 	 * @return $this
 	 */
@@ -71,7 +78,7 @@ class Table extends Module {
 	}
 
 	/**
-	 * @param $rows
+	 * @param array[] $rows
 	 *
 	 * @return $this
 	 */
