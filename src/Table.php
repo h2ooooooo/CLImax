@@ -32,6 +32,7 @@ class Table extends Module {
 
 	protected $includeHeaders = true;
 
+	protected $convertValues = true;
 
 	/**
 	 * Table constructor.
@@ -331,6 +332,14 @@ class Table extends Module {
 							}
 						}
 
+						if ($this->convertValues) {
+							if (is_bool($rowValue)) {
+								$rowValue = $rowValue ? 'true' : 'false';
+							} else if ($rowValue === null) {
+								$rowValue = 'NULL';
+							}
+						}
+
 						$rowValue = DebugColour::enclose($rowValue, $valueColour);
 					}
 
@@ -602,6 +611,51 @@ class Table extends Module {
 
 		$this->application->printText($debugLevel, utf8_encode($output), $colour, $backgroundColour, null,
 			false);
+
+		return $this;
+	}
+
+	/**
+	 * Sets whether or not to convert values when outputting the table (eg. turn a boolean into TRUE/FALSE, null into "NULL" etc.)
+	 *
+	 * @param bool $convertValues
+	 */
+	public function setConvertValues($convertValues) {
+		$this->convertValues = $convertValues;
+	}
+
+	/**
+	 * Outputs a table where the array key is displayed in the "Label" column and the array value is displayed in the "Value" column
+	 *
+	 * @param array $labelValueArray The full array with keys and values
+	 * @param string $labelText The header text for the label column (the array key)
+	 * @param string $valueText The header text for the value column (the array value)
+	 * @param callable $labelCallback - function($label):String|int A callback to modify the "label" column values before they're output
+	 * @param callable $valueCallback - function($label):mixed A callback to modify the "value" column values before they're output
+	 *
+	 * @return Table An instance of this for chaining or outputting
+	 */
+	public function labelTable($labelValueArray, $labelText = 'Label', $valueText = 'Value', $labelCallback = null, $valueCallback = null) {
+		$this->rows = [];
+
+		foreach ($labelValueArray as $label => $value) {
+			if (!empty($labelCallback)) {
+				$label = call_user_func($labelCallback, $label);
+			}
+
+			if (!empty($valueCallback)) {
+				$value = call_user_func($valueCallback, $value);
+			}
+
+			if (is_int($label) && $value === null) {
+				$this->addRow(null);
+			} else {
+				$this->addRow([
+					$labelText => $label,
+					$valueText => $value,
+				]);
+			}
+		}
 
 		return $this;
 	}
