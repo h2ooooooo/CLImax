@@ -640,21 +640,44 @@ abstract class Application {
         $debugLevel = DebugLevel::ALWAYS_PRINT,
         $addBrackets = true,
         $padString = '-',
-        $padTopBottom = true
+        $padTopBottom = true,
+        $maxLength = null
     ) {
-        $messageLine = str_pad(($addBrackets ? '[' . $message . ']' : $message), $this->size->columns, $padString,
+        $size = $this->size->columns;
+
+        if ($maxLength !== null && $size > $maxLength) {
+            $size = $maxLength;
+
+            $fullSize = false;
+        } else {
+            $fullSize = true;
+        }
+
+        $messageLine = str_pad(($addBrackets ? '[' . $message . ']' : $message), $size, $padString,
             STR_PAD_BOTH);
 
         if ($padTopBottom) {
-            $padLine = str_repeat($padString, $this->size->columns);
+            $padLine = str_repeat($padString, $size);
 
             $this->printText($debugLevel, $padLine, $colour, $backgroundColour, '', false);
         }
 
+        if (!$fullSize) {
+            $this->newLine();
+        }
+
         $this->printText($debugLevel, $messageLine, $colour, $backgroundColour, '', false);
 
+        if (!$fullSize) {
+            $this->newLine();
+        }
+
         if ($padTopBottom) {
-            $this->printText($debugLevel, substr($padLine, 0, -2), $colour, $backgroundColour, '', false);
+            if ($fullSize) {
+                $this->printText($debugLevel, substr($padLine, 0, -2), $colour, $backgroundColour, '', false);
+            } else {
+                $this->printText($debugLevel, $padLine, $colour, $backgroundColour, '', false);
+            }
         }
 
         $this->newLine();
