@@ -84,7 +84,7 @@ class HighlightPlugin extends AbstractPlugin
             }
         }
 
-        $colourRegex = '((?:light)?black|red|green|yellow|brown|blue|purple|magenta|cyan|gray|white)';
+        $colourRegex = '((?:light)?(?:black|red|green|yellow|brown|blue|purple|magenta|cyan|gray|white))';
         $matchRegex = sprintf('~^(.+?)\:%s(?:\:%s)?$~i', $colourRegex, $colourRegex);
 
         if (preg_match($matchRegex, $text, $match)) {
