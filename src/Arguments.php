@@ -126,6 +126,32 @@ class Arguments
     }
 
     /**
+     * Removes an argument if it exists
+     *
+     * @param string $argument The name of the argument
+     * @param bool $escape Whether or not to escape the argument ($this->get() uses this method, and there's no reason
+     *     to escape twice)
+     * @param bool $useAliases Whether or not to check aliases
+     */
+    public function remove($argument, $escape = true, $useAliases = true) {
+        if ($escape) {
+            $argument = $this->escapeArgument($argument);
+        }
+
+        if ($useAliases && !empty($this->aliases[$argument])) {
+            foreach ($this->aliases[$argument] as $alias) {
+                if ($this->has($alias, true, false)) {
+                    unset($this->arguments[$alias]);
+
+                    continue;
+                }
+            }
+        }
+
+        unset($this->arguments[$argument]);
+    }
+
+    /**
      * Checks whether an argument exists
      *
      * @param string $argument The name of the argument
@@ -353,5 +379,36 @@ class Arguments
     public function __get($argument)
     {
         return $this->get($argument);
+    }
+
+    /**
+     * @return array
+     */
+    public function argv() {
+        $argv = [];
+
+        foreach ($this->getAnonymous() as $anonymousArgument) {
+            $argv[] = $anonymousArgument;
+        }
+
+        foreach ($this->arguments as $argument => $value) {
+            if ($argument === 'anonymous') {
+                continue;
+            }
+
+            $argv[] = '--' . $argument;
+            $argv[] = $value;
+        }
+
+        return $argv;
+    }
+
+    /**
+     * @return int
+     */
+    public function argc() {
+         $argv = $this->argv();
+         
+        return count($argv);
     }
 }
