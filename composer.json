@@ -18,7 +18,7 @@
   },
   "dist": {
     "url": "git@github.com:h2ooooooo/CLImax.git",
-    "type": "vcs"
+    "type": "git"
   },
   "autoload": {
     "psr-4": {
