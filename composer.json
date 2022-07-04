@@ -14,11 +14,7 @@
   ],
   "require": {
     "php": ">=5.4.0",
-    "seld/cli-prompt": "^1.0.3"
-  },
-  "dist": {
-    "url": "git@github.com:h2ooooooo/CLImax.git",
-    "type": "git"
+    "seld/cli-prompt": "^1.0.4"
   },
   "autoload": {
     "psr-4": {
