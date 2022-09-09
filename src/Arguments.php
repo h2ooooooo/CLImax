@@ -35,8 +35,8 @@ class Arguments
         $argumentBuffer = '';
 
         foreach ($argumentsRaw as $argument) {
-            // Find arguments that start with either "-" or "/" (eg. -h, --help, /help)
-            if (strlen($argument) >= 1 && ($argument[0] == '-' || $argument[0] == '/')) {
+            // Find arguments that start with either "-" (eg. -h, --help)
+            if (strlen($argument) >= 1 && ($argument[0] == '-')) {
                 // Strip the extra "-" if one is specified (--user becomes -user) and get the argument value (eg. "foo")
                 $argumentBuffer = substr($argument, ($argument[0] == '-' && $argument[1] == '-' ? 2 : 1));
 
