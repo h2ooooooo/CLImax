@@ -9,15 +9,12 @@ namespace CLImax;
 
 use CLImax\Enum\BoxSet;
 use CLImax\Enum\TableDirection;
-use Exception;
-use InvalidArgumentException;
 
 /**
  * Class Table
  * @package CLImax
  */
-class Table extends Module
-{
+class Table extends Module {
     protected $headerCallback;
     protected $headers = [];
     protected $rows = [];
@@ -40,8 +37,8 @@ class Table extends Module
     /**
      * Table constructor.
      *
-     * @param Application $application
-     * @param array $rows
+     * @param \CLImax\Application $application
+     * @param array               $rows
      */
     public function __construct(Application &$application, $rows = [])
     {
@@ -50,32 +47,6 @@ class Table extends Module
         if (!empty($rows)) {
             $this->addRows($rows);
         }
-    }
-
-    /**
-     * @param array[] $rows
-     *
-     * @return $this
-     */
-    public function addRows($rows)
-    {
-        foreach ($rows as $row) {
-            $this->addRow($row);
-        }
-
-        return $this;
-    }
-
-    /**
-     * @param array $row
-     *
-     * @return $this
-     */
-    public function addRow($row)
-    {
-        $this->rows[] = $row;
-
-        return $this;
     }
 
     /**
@@ -91,9 +62,34 @@ class Table extends Module
     /**
      * @return array
      */
-    public function popRow()
-    {
+    public function popRow() {
         return array_pop($this->rows);
+    }
+
+    /**
+     * @param array $row
+     *
+     * @return $this
+     */
+    public function addRow($row)
+    {
+        $this->rows[] = $row;
+
+        return $this;
+    }
+
+    /**
+     * @param array[] $rows
+     *
+     * @return $this
+     */
+    public function addRows($rows)
+    {
+        foreach ($rows as $row) {
+            $this->addRow($row);
+        }
+
+        return $this;
     }
 
     /**
@@ -146,7 +142,7 @@ class Table extends Module
     public function setDirection($direction)
     {
         if ($direction !== TableDirection::LEFT_TO_RIGHT && $direction !== TableDirection::TOP_TO_BOTTOM) {
-            throw new InvalidArgumentException('$direction must be one of the Table::DIRECTION_ constants');
+            throw new \InvalidArgumentException('$direction must be one of the Table::DIRECTION_ constants');
         }
 
         $this->direction = $direction;
@@ -169,9 +165,9 @@ class Table extends Module
     /**
      * @param $boxSet
      *
-     * @return $this
-     * @throws Exception
+     * @throws \Exception
      *
+     * @return $this
      */
     public function setBoxSet($boxSet)
     {
@@ -194,46 +190,15 @@ class Table extends Module
      *
      * @return $this
      */
-    public function setIncludeHeaders($includeHeaders)
-    {
+    public function setIncludeHeaders($includeHeaders) {
         $this->includeHeaders = $includeHeaders;
-
-        return $this;
-    }
-
-    public function setHeaderCallback($headerCallback)
-    {
-        $this->headerCallback = $headerCallback;
-
-        return $this;
-    }
-
-    /**
-     * @param int $debugLevel
-     * @param int $colour
-     * @param int $backgroundColour
-     *
-     * @return $this
-     *
-     * @throws Exception
-     */
-    public function output(
-        $debugLevel = DebugLevel::ALWAYS_PRINT,
-        $colour = DebugColour::STANDARD,
-        $backgroundColour = DebugColour::STANDARD
-    )
-    {
-        $output = $this->toString();
-
-        $this->application->printText($debugLevel, utf8_encode($output), $colour, $backgroundColour, null,
-            false);
 
         return $this;
     }
 
     /**
      * @return string
-     * @throws Exception
+     * @throws \Exception
      */
     public function toString()
     {
@@ -437,13 +402,13 @@ class Table extends Module
                 $columnRowLineCounts = [];
 
                 foreach ($row as $column => $value) {
-                    $calculatedEscapeSequencePrefixes[$column] = [];
+                    $calculatedEscapeSequencePrefixes[ $column ] = [];
 
                     $lines = $this->splitLines($value);
 
                     foreach ($lines as $lineIndex => $line) {
                         if (!empty($calculatedEscapeSequencePrefixes[$column])) {
-                            $lastCalculatedEscapeSequence = end($calculatedEscapeSequencePrefixes[$column]);
+                            $lastCalculatedEscapeSequence = end($calculatedEscapeSequencePrefixes[ $column ]);
                         } else {
                             $lastCalculatedEscapeSequence = '';
                         }
@@ -451,7 +416,7 @@ class Table extends Module
                         $calculatedEscapeSequence = DebugColour::getCalculatedSequence($lastCalculatedEscapeSequence . $line);
 
                         if (!empty($calculatedEscapeSequence)) {
-                            $calculatedEscapeSequencePrefixes[$column][$lineIndex + 1] = $calculatedEscapeSequence;
+                            $calculatedEscapeSequencePrefixes[ $column ][$lineIndex + 1] = $calculatedEscapeSequence;
                         }
                     }
 
@@ -471,6 +436,8 @@ class Table extends Module
                 unset($columnRowLine);
 
                 $columnNames = array_keys($columnRowLines);
+
+                $rowBufferSingle = [];
 
                 for ($lineIndex = 0; $lineIndex < $columnRowLineCount; $lineIndex++) {
                     $rowValues = [];
@@ -493,8 +460,10 @@ class Table extends Module
                     $rowContents .= implode($boxSet['line']['vertical'], $rowValues); // Output all row columns for this line
                     $rowContents .= $boxSet['line']['vertical']; // After last column for this line
 
-                    $rowBuffer[] = $rowContents;
+                    $rowBufferSingle[] = $rowContents;
                 }
+
+                $rowBuffer[] = implode(PHP_EOL, $rowBufferSingle);
             }
         }
 
@@ -504,14 +473,14 @@ class Table extends Module
             // Make sure that if we don't use individual row separators that we have a divider between the headers and the content
 
             // ╔═════════════════╦══════════════╗
-            // ║ Statistic     ║ Time taken ║
+            // ║ Statistic       ║ Time taken   ║
             // ╠═════════════════╬══════════════╣
-            // ║ nameLookup    ║          0 ║
-            // ║ connect       ║          0 ║
-            // ║ preTransfer   ║          0 ║
-            // ║ startTransfer ║      0.109 ║
+            // ║ nameLookup      ║            0 ║
+            // ║ connect         ║            0 ║
+            // ║ preTransfer     ║            0 ║
+            // ║ startTransfer   ║        0.109 ║
             // ╠═════════════════╬══════════════╣
-            // ║ total         ║      0.124 ║
+            // ║ total           ║        0.124 ║
             // ╚═════════════════╩══════════════╝
 
             array_splice($rowBuffer, 1, 0, [$rowSeparatorLine]);
@@ -527,48 +496,6 @@ class Table extends Module
                 $separatorColumns) . $boxSet['bottom']['right'] . PHP_EOL;
 
         return $buffer;
-    }
-
-    /**
-     * @param $string
-     *
-     * @return string[]
-     */
-    private function splitLines($string)
-    {
-        return preg_split('~\R~', $string);
-    }
-
-    /**
-     * @param $string
-     *
-     * @return int
-     */
-    private function stringMaxLineLength($string)
-    {
-        $stringLines = $this->splitLines($string);
-
-        $maxStringLineLength = 0;
-
-        foreach ($stringLines as $stringLine) {
-            $maxStringLineLength = max($maxStringLineLength, static::stringLength($stringLine));
-        }
-
-        return $maxStringLineLength;
-    }
-
-    /**
-     * @param $string
-     *
-     * @return int
-     */
-    public function stringLength($string)
-    {
-        $string = $this->application->mutateTextWithOutputPlugins($string);
-
-        $string = self::removeAnsiCodes($string);
-
-        return strlen($string);
     }
 
     /**
@@ -623,12 +550,81 @@ class Table extends Module
     }
 
     /**
+     * @param $string
+     *
+     * @return int
+     */
+    public function stringLength($string)
+    {
+        $string = $this->application->mutateTextWithOutputPlugins($string);
+
+        $string = self::removeAnsiCodes($string);
+
+        return strlen($string);
+    }
+
+    /**
+     * @param $string
+     *
+     * @return string[]
+     */
+    private function splitLines($string) {
+        return preg_split('~\R~', $string);
+    }
+
+    /**
+     * @param $string
+     *
+     * @return int
+     */
+    private function stringMaxLineLength($string)
+    {
+        $stringLines = $this->splitLines($string);
+
+        $maxStringLineLength = 0;
+
+        foreach ($stringLines as $stringLine) {
+            $maxStringLineLength = max($maxStringLineLength, static::stringLength($stringLine));
+        }
+
+        return $maxStringLineLength;
+    }
+
+    public function setHeaderCallback($headerCallback)
+    {
+        $this->headerCallback = $headerCallback;
+
+        return $this;
+    }
+
+    /**
+     * @param int $debugLevel
+     * @param int $colour
+     * @param int $backgroundColour
+     *
+     * @return $this
+     *
+     * @throws \Exception
+     */
+    public function output(
+        $debugLevel = DebugLevel::ALWAYS_PRINT,
+        $colour = DebugColour::STANDARD,
+        $backgroundColour = DebugColour::STANDARD
+    ) {
+        $output = $this->toString();
+
+        $this->application->printText($debugLevel, utf8_encode($output), $colour, $backgroundColour, null,
+            false);
+
+        return $this;
+    }
+
+    /**
      * Sets whether or not to convert values when outputting the table (eg. turn a boolean into TRUE/FALSE, null into "NULL" etc.)
      *
      * @param bool $convertValues
      */
-    public function setConvertValues($convertValues)
-    {
+    public function setConvertValues($convertValues) {
         $this->convertValues = $convertValues;
     }
 
@@ -643,8 +639,7 @@ class Table extends Module
      *
      * @return Table An instance of this for chaining or outputting
      */
-    public function labelTable($labelValueArray, $labelText = 'Label', $valueText = 'Value', $labelCallback = null, $valueCallback = null)
-    {
+    public function labelTable($labelValueArray, $labelText = 'Label', $valueText = 'Value', $labelCallback = null, $valueCallback = null) {
         $this->rows = [];
 
         foreach ($labelValueArray as $label => $value) {
