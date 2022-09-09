@@ -8,6 +8,8 @@
 
 namespace CLImax;
 
+use Exception;
+
 /**
  * Class SubApplication
  * @package CLImax
@@ -30,12 +32,12 @@ abstract class SubApplication extends Application
     /**
      * Magically calls a method of the main application
      *
-     * @param string          $method
+     * @param string $method
      * @param array|Arguments $arguments
      *
      * @return mixed
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public function __call($method, $arguments)
     {
@@ -43,6 +45,6 @@ abstract class SubApplication extends Application
             return call_user_func_array(array($this->_application, $method), $arguments);
         }
 
-        throw new \Exception(sprintf('Application method "%s" not found', $method));
+        throw new Exception(sprintf('Application method "%s" not found', $method));
     }
 }

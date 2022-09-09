@@ -23,11 +23,13 @@ class StdStream
      * @param string $stream
      * @param string $mode
      */
-    public function __construct($stream, $mode = 'r') {
+    public function __construct($stream, $mode = 'r')
+    {
         $this->handle = fopen($stream, $mode);
     }
 
-    public function __destruct() {
+    public function __destruct()
+    {
         fclose($this->handle);
     }
 }

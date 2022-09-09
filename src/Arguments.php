@@ -7,6 +7,8 @@
 
 namespace CLImax;
 
+use Exception;
+
 /**
  * Class Arguments
  * @package CLImax
@@ -24,12 +26,39 @@ class Arguments
     private $aliases = [];
 
     /**
+     * Constructs an argument class and checks if the MultiByte library is installed
+     *
+     * @param array|null $arguments A key-value pair array where the key is the argument and the value is the value
+     */
+    public function __construct($arguments = null)
+    {
+        $this->mbInstalled = function_exists('mb_strtolower');
+
+        if (!empty($arguments)) {
+            $this->setArray($arguments);
+        }
+    }
+
+    /**
+     * Sets a bunch of arguments through a key-value pair array
+     *
+     * @param array $arguments A key-value pair array where the key is the argument and the value is the value
+     */
+    public function setArray($arguments)
+    {
+        foreach ($arguments as $argument => $value) {
+            $this->set($argument, $value);
+        }
+    }
+
+    /**
      * @param $argumentsRaw
      *
-     * @return \CLImax\Arguments
-     * @throws \Exception
+     * @return Arguments
+     * @throws Exception
      */
-    public static function init($argumentsRaw) {
+    public static function init($argumentsRaw)
+    {
         $arguments = new Arguments();
 
         $argumentBuffer = '';
@@ -75,38 +104,22 @@ class Arguments
     }
 
     /**
-     * Constructs an argument class and checks if the MultiByte library is installed
+     * Sets a single argument
      *
-     * @param array|null $arguments A key-value pair array where the key is the argument and the value is the value
+     * @param string $argument The name of the argument
+     * @param mixed $value The value to set the argument to
+     *
+     * @throws Exception An exception will be thrown if you try to set an anonymous variable using this method
      */
-    public function __construct($arguments = null)
+    public function set($argument, $value)
     {
-        $this->mbInstalled = function_exists('mb_strtolower');
+        $argument = $this->escapeArgument($argument);
 
-        if (!empty($arguments)) {
-            $this->setArray($arguments);
+        if ($argument === 'anonymous') {
+            throw new Exception('You have to use setAnonymous() to set an anonymous argument');
         }
-    }
 
-    /**
-     * @return array
-     */
-    public function getAll() {
-        $arguments = $this->arguments;
-
-        unset($arguments['anonymous']);
-
-        return $arguments;
-    }
-
-    /**
-     * Gets all the defined aliases added with the alias() method
-     *
-     * @return array
-     */
-    public function getAliases()
-    {
-        return $this->aliases;
+        $this->arguments[$argument] = $value;
     }
 
     /**
@@ -126,6 +139,38 @@ class Arguments
     }
 
     /**
+     * Adds an anonymous argument (an argument without a key)
+     *
+     * @param $value
+     */
+    public function addAnonymous($value)
+    {
+        $this->arguments['anonymous'][] = $value;
+    }
+
+    /**
+     * @return array
+     */
+    public function getAll()
+    {
+        $arguments = $this->arguments;
+
+        unset($arguments['anonymous']);
+
+        return $arguments;
+    }
+
+    /**
+     * Gets all the defined aliases added with the alias() method
+     *
+     * @return array
+     */
+    public function getAliases()
+    {
+        return $this->aliases;
+    }
+
+    /**
      * Removes an argument if it exists
      *
      * @param string $argument The name of the argument
@@ -133,7 +178,8 @@ class Arguments
      *     to escape twice)
      * @param bool $useAliases Whether or not to check aliases
      */
-    public function remove($argument, $escape = true, $useAliases = true) {
+    public function remove($argument, $escape = true, $useAliases = true)
+    {
         if ($escape) {
             $argument = $this->escapeArgument($argument);
         }
@@ -199,46 +245,148 @@ class Arguments
     }
 
     /**
-     * Sets a bunch of arguments through a key-value pair array
-     *
-     * @param array $arguments A key-value pair array where the key is the argument and the value is the value
-     */
-    public function setArray($arguments)
-    {
-        foreach ($arguments as $argument => $value) {
-            $this->set($argument, $value);
-        }
-    }
-
-    /**
-     * Sets a single argument
+     * Gets an argument
      *
      * @param string $argument The name of the argument
-     * @param mixed $value The value to set the argument to
+     * @param mixed $default The default value if the argument does not exist
+     * @param bool $useAliases
      *
-     * @throws \Exception An exception will be thrown if you try to set an anonymous variable using this method
+     * @return mixed
+     * @throws Exception
      */
-    public function set($argument, $value)
+    public function get($argument, $default = null, $useAliases = true)
     {
         $argument = $this->escapeArgument($argument);
 
-        if ($argument === 'anonymous') {
-            throw new \Exception('You have to use setAnonymous() to set an anonymous argument');
+        if (!$this->has($argument, false, $useAliases)) {
+            return $default;
         }
 
-        $this->arguments[$argument] = $value;
+        if (!isset($this->arguments[$argument])) {
+            // It must be an alias
+            if (!isset($this->aliases[$argument])) {
+                throw new Exception(sprintf('Apparently argument %s was not set, but neither was the alias',
+                    $argument));
+            }
+
+            foreach ($this->aliases[$argument] as $alias) {
+                if (!$this->has($alias, false, false)) {
+                    continue;
+                }
+
+                return $this->get($alias, $default, false);
+            }
+
+            return $default;
+        }
+
+        return $this->arguments[$argument];
     }
 
     /**
-     * Checks whether an anonymous argument exists
+     * @param array $kvpArgumentAliases An array where the key is the alias and the value is the argument to create the alias for
      *
-     * @param int $index The index of the anonymous argument
+     * @return $this An instance of Arguments, for chaining
+     */
+    public function aliases($kvpArgumentAliases)
+    {
+        foreach ($kvpArgumentAliases as $argument => $aliases) {
+            $this->alias($aliases, $argument);
+        }
+
+        return $this; // For chaining
+    }
+
+    /**
+     * Creates argument aliases - makes all the specified arguments act the same way (essentially being aliases of
+     * eachother)
+     *
+     * @param string $alias The alias to refer to $argument
+     * @param string $argument The argument to create an alias for
+     *
+     * @return $this An instance of Arguments, for chaining
+     */
+    public function alias($alias, $argument)
+    {
+        $alias = $this->escapeArgument($alias);
+        $argument = $this->escapeArgument($argument);
+
+        if (empty($this->aliases[$alias])) {
+            $this->aliases[$alias] = [$argument];
+        } else {
+            $this->aliases[$alias][] = $argument;
+        }
+
+        return $this; // For chaining
+    }
+
+    /**
+     * Magic alias for $this->has($argument)
+     *
+     * @param string $argument The name of the argument
      *
      * @return bool
      */
-    public function hasAnonymous($index)
+    public function __isset($argument)
     {
-        return isset($this->arguments['anonymous'][$index]);
+        return $this->has($argument);
+    }
+
+    /**
+     * Magic alias for $this->get($argument)
+     *
+     * @param string $argument The name of the argument
+     *
+     * @return mixed
+     */
+    public function __get($argument)
+    {
+        return $this->get($argument);
+    }
+
+    /**
+     * Magic alias for $this->set($argument, $value)
+     **
+     *
+     * @param string $argument The name of the argument
+     * @param mixed $value The value to set the argument to
+     */
+    public function __set($argument, $value)
+    {
+        $this->set($argument, $value);
+    }
+
+    /**
+     * @return int
+     */
+    public function argc()
+    {
+        $argv = $this->argv();
+
+        return count($argv);
+    }
+
+    /**
+     * @return array
+     */
+    public function argv()
+    {
+        $argv = [];
+
+        foreach ($this->getAnonymous() as $anonymousArgument) {
+            $argv[] = $anonymousArgument;
+        }
+
+        foreach ($this->arguments as $argument => $value) {
+            if ($argument === 'anonymous') {
+                continue;
+            }
+
+            $argv[] = '--' . $argument;
+            $argv[] = $value;
+        }
+
+        return $argv;
     }
 
     /**
@@ -261,154 +409,14 @@ class Arguments
     }
 
     /**
-     * Adds an anonymous argument (an argument without a key)
+     * Checks whether an anonymous argument exists
      *
-     * @param $value
-     */
-    public function addAnonymous($value)
-    {
-        $this->arguments['anonymous'][] = $value;
-    }
-
-    /**
-     * Gets an argument
-     *
-     * @param string $argument The name of the argument
-     * @param mixed $default The default value if the argument does not exist
-     * @param bool $useAliases
-     *
-     * @return mixed
-     * @throws \Exception
-     */
-    public function get($argument, $default = null, $useAliases = true)
-    {
-        $argument = $this->escapeArgument($argument);
-
-        if (!$this->has($argument, false, $useAliases)) {
-            return $default;
-        }
-
-        if (!isset($this->arguments[$argument])) {
-            // It must be an alias
-            if (!isset($this->aliases[$argument])) {
-                throw new \Exception(sprintf('Apparently argument %s was not set, but neither was the alias',
-                    $argument));
-            }
-
-            foreach ($this->aliases[$argument] as $alias) {
-                if (!$this->has($alias, false, false)) {
-                    continue;
-                }
-
-                return $this->get($alias, $default, false);
-            }
-
-            return $default;
-        }
-
-        return $this->arguments[$argument];
-    }
-
-	/**
-	 * Creates argument aliases - makes all the specified arguments act the same way (essentially being aliases of
-	 * eachother)
-	 *
-	 * @param string $alias The alias to refer to $argument
-	 * @param string $argument The argument to create an alias for
-	 *
-	 * @return $this An instance of Arguments, for chaining
-	 */
-	public function alias($alias, $argument)
-	{
-		$alias = $this->escapeArgument($alias);
-		$argument = $this->escapeArgument($argument);
-
-		if (empty($this->aliases[ $alias ])) {
-			$this->aliases[ $alias ] = [$argument];
-		} else {
-			$this->aliases[ $alias ][] = $argument;
-		}
-
-		return $this; // For chaining
-	}
-
-	/**
-	 * @param array $kvpArgumentAliases An array where the key is the alias and the value is the argument to create the alias for
-	 *
-	 * @return $this An instance of Arguments, for chaining
-	 */
-	public function aliases($kvpArgumentAliases) {
-		foreach ($kvpArgumentAliases as $argument => $aliases) {
-			$this->alias($aliases, $argument);
-		}
-
-		return $this; // For chaining
-	}
-
-    /**
-     * Magic alias for $this->has($argument)
-     *
-     * @param string $argument The name of the argument
+     * @param int $index The index of the anonymous argument
      *
      * @return bool
      */
-    public function __isset($argument)
+    public function hasAnonymous($index)
     {
-        return $this->has($argument);
-    }
-
-    /**
-     * Magic alias for $this->set($argument, $value)
-     **
-     *
-     * @param string $argument The name of the argument
-     * @param mixed $value The value to set the argument to
-     */
-    public function __set($argument, $value)
-    {
-        $this->set($argument, $value);
-    }
-
-    /**
-     * Magic alias for $this->get($argument)
-     *
-     * @param string $argument The name of the argument
-     *
-     * @return mixed
-     */
-    public function __get($argument)
-    {
-        return $this->get($argument);
-    }
-
-    /**
-     * @return array
-     */
-    public function argv() {
-        $argv = [];
-
-        foreach ($this->getAnonymous() as $anonymousArgument) {
-            $argv[] = $anonymousArgument;
-        }
-
-        foreach ($this->arguments as $argument => $value) {
-            if ($argument === 'anonymous') {
-                continue;
-            }
-
-            $argv[] = '--' . $argument;
-            $argv[] = $value;
-        }
-
-        return $argv;
-    }
-
-    /**
-     * @return int
-     */
-    public function argc() {
-         $argv = $this->argv();
-         
-        return count($argv);
+        return isset($this->arguments['anonymous'][$index]);
     }
 }

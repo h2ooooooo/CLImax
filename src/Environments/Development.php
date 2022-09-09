@@ -11,7 +11,8 @@ namespace CLImax\Environments;
 /**
  * Suggested application defaults for developement
  */
-class Development extends Environment {
+class Development extends Environment
+{
     public $exitOnfatal = false;
     public $internalDebugging = true;
 }

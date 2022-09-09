@@ -11,7 +11,8 @@ namespace CLImax;
  * Class ListView
  * @package CLImax
  */
-class ListView extends Module {
+class ListView extends Module
+{
     const TYPESET_ASCII_SINGLE_LINED = 'singleLined';
     const TYPESET_ASCII_DOUBLE_LINED = 'doubleLined';
     const TYPESET_DEFAULT = 'default';
@@ -47,11 +48,33 @@ class ListView extends Module {
         $this->data($data);
     }
 
-    public function data($data) {
+    public function data($data)
+    {
         $this->data = $data;
     }
 
-    protected function _getPrint($data, $typeSetCharacters, $prefix = '', $eol = PHP_EOL, $indentationLevel = 0) {
+    public function output($colour = null, $backgroundColour = null, $debugLevel = DebugLevel::ALWAYS_PRINT)
+    {
+        $text = $this->getPrint();
+
+        return $this->application->printText($debugLevel, $text, $colour, $backgroundColour);
+    }
+
+    public function getPrint($typeSet = ListView::TYPESET_ASCII_SINGLE_LINED, $eol = PHP_EOL)
+    {
+        $typeSetCharacters = $this->typeSets[$typeSet];
+
+        foreach ($typeSetCharacters as &$value) {
+            $value = chr($value);
+        }
+
+        unset($value);
+
+        return $this->_getPrint($this->data, $typeSetCharacters, '', $eol);
+    }
+
+    protected function _getPrint($data, $typeSetCharacters, $prefix = '', $eol = PHP_EOL, $indentationLevel = 0)
+    {
         $lines = [];
 
         $subIndentationLevel = $indentationLevel + 1;
@@ -82,23 +105,5 @@ class ListView extends Module {
         }
 
         return implode(PHP_EOL, $lines);
-    }
-
-    public function getPrint($typeSet = ListView::TYPESET_ASCII_SINGLE_LINED, $eol = PHP_EOL) {
-        $typeSetCharacters = $this->typeSets[$typeSet];
-
-        foreach ($typeSetCharacters as &$value) {
-            $value = chr($value);
-        }
-
-        unset($value);
-
-        return $this->_getPrint($this->data, $typeSetCharacters, '', $eol);
-    }
-
-    public function output($colour = null, $backgroundColour = null, $debugLevel = DebugLevel::ALWAYS_PRINT) {
-        $text = $this->getPrint();
-
-        return $this->application->printText($debugLevel, $text, $colour, $backgroundColour);
     }
 }

@@ -12,7 +12,8 @@ namespace CLImax\Enum;
  * Class SizeType
  * @package CLImax
  */
-class SizeType {
+class SizeType
+{
     const ROWS = 1;
     const COLUMNS = 2;
     const BOTH = 3; //ROWS & COLUMNS

@@ -11,5 +11,6 @@ namespace CLImax\Environments;
 /**
  * Suggested application defaults for production
  */
-class Production extends Environment {
+class Production extends Environment
+{
 }

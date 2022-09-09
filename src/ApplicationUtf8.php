@@ -12,12 +12,15 @@ namespace CLImax;
  *
  * @mixin Application
  */
-abstract class ApplicationUtf8 extends Application {
-	public function decodeUtf8() {
-		return false;
-	}
+abstract class ApplicationUtf8 extends Application
+{
+    public function decodeUtf8()
+    {
+        return false;
+    }
 
-	public function isUtf8() {
-		return true;
-	}
+    public function isUtf8()
+    {
+        return true;
+    }
 }

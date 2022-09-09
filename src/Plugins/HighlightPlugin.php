@@ -3,8 +3,8 @@
 
 namespace CLImax\Plugins;
 
-use CLImax\DebugColour;
 use CLImax\Application;
+use CLImax\DebugColour;
 
 /**
  * Class HighlightPlugin
@@ -17,40 +17,35 @@ use CLImax\Application;
  */
 class HighlightPlugin extends AbstractPlugin
 {
-    public function register(Application $application) {
-        $application->addOutputPlugin('{{%s}}', [$this, 'encloseOutputPlugin']);
-    }
-
     private $colourNames = [
         'r' => DebugColour::RED,
         'g' => DebugColour::GREEN,
         'b' => DebugColour::BLUE,
 
-        'black'   => DebugColour::BLACK,
-        'red'     => DebugColour::RED,
-        'green'   => DebugColour::GREEN,
-        'yellow'  => DebugColour::YELLOW,
-        'brown'   => DebugColour::BROWN,
-        'blue'    => DebugColour::BLUE,
-        'purple'  => DebugColour::PURPLE,
+        'black' => DebugColour::BLACK,
+        'red' => DebugColour::RED,
+        'green' => DebugColour::GREEN,
+        'yellow' => DebugColour::YELLOW,
+        'brown' => DebugColour::BROWN,
+        'blue' => DebugColour::BLUE,
+        'purple' => DebugColour::PURPLE,
         'magenta' => DebugColour::MAGENTA,
-        'cyan'    => DebugColour::CYAN,
-        'gray'    => DebugColour::GRAY,
-        'white'   => DebugColour::WHITE,
+        'cyan' => DebugColour::CYAN,
+        'gray' => DebugColour::GRAY,
+        'white' => DebugColour::WHITE,
 
-        'lightblack'   => DebugColour::BLACK, // No such thing as LIGHT_BLACK
-        'lightred'     => DebugColour::LIGHT_RED,
-        'lightgreen'   => DebugColour::LIGHT_GREEN,
-        'lightyellow'  => DebugColour::LIGHT_YELLOW,
-        'lightbrown'   => DebugColour::LIGHT_BROWN,
-        'lightblue'    => DebugColour::LIGHT_BLUE,
-        'lightpurple'  => DebugColour::LIGHT_PURPLE,
+        'lightblack' => DebugColour::BLACK, // No such thing as LIGHT_BLACK
+        'lightred' => DebugColour::LIGHT_RED,
+        'lightgreen' => DebugColour::LIGHT_GREEN,
+        'lightyellow' => DebugColour::LIGHT_YELLOW,
+        'lightbrown' => DebugColour::LIGHT_BROWN,
+        'lightblue' => DebugColour::LIGHT_BLUE,
+        'lightpurple' => DebugColour::LIGHT_PURPLE,
         'lightmagenta' => DebugColour::LIGHT_MAGENTA,
-        'lightcyan'    => DebugColour::LIGHT_CYAN,
-        'lightgray'    => DebugColour::LIGHT_GRAY,
-        'lightwhite'   => DebugColour::WHITE, // No such thing as LIGHT_WHITE
+        'lightcyan' => DebugColour::LIGHT_CYAN,
+        'lightgray' => DebugColour::LIGHT_GRAY,
+        'lightwhite' => DebugColour::WHITE, // No such thing as LIGHT_WHITE
     ];
-
     private $lineColourHighlighter = [
         DebugColour::BLACK => [DebugColour::WHITE, DebugColour::BLACK],
         DebugColour::WHITE => [DebugColour::GRAY, DebugColour::WHITE],
@@ -71,6 +66,11 @@ class HighlightPlugin extends AbstractPlugin
         DebugColour::LIGHT_CYAN => [DebugColour::WHITE, DebugColour::LIGHT_CYAN],
         DebugColour::LIGHT_GRAY => [DebugColour::WHITE, DebugColour::LIGHT_GRAY],
     ];
+
+    public function register(Application $application)
+    {
+        $application->addOutputPlugin('{{%s}}', [$this, 'encloseOutputPlugin']);
+    }
 
     public function encloseOutputPlugin($text, $lineTextColour = null, $lineBackgroundColour = null)
     {

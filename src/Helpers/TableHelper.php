@@ -11,7 +11,8 @@ namespace CLImax\Helpers;
 
 class TableHelper
 {
-    public static function flipRows($rows) {
+    public static function flipRows($rows)
+    {
         $columnValues = [];
         $mainColumn = null;
 

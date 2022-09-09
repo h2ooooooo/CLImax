@@ -9,21 +9,17 @@
 namespace CLImax\Event;
 
 
-
 /**
  * Class Event
  * @package CLImax\Event
  */
-class Event {
-    private $events;
-
-    private $identifier;
-
-    private $callback;
-
-    private $intervalMicroseconds;
-
+class Event
+{
     public $nextRun = null;
+    private $events;
+    private $identifier;
+    private $callback;
+    private $intervalMicroseconds;
 
     /**
      * Event constructor.
@@ -33,23 +29,27 @@ class Event {
      * @param $callback
      * @param $intervalMicroseconds
      */
-    public function __construct( &$events, $identifier, $callback, $intervalMicroseconds ) {
-        $this->events     = $events;
+    public function __construct(&$events, $identifier, $callback, $intervalMicroseconds)
+    {
+        $this->events = $events;
         $this->identifier = $identifier;
-        $this->callback   = $callback;
+        $this->callback = $callback;
         $this->intervalMicroseconds = $intervalMicroseconds;
 
         $this->RecalculateNextRun();
     }
 
-    public function __destruct() {
+    private function recalculateNextRun()
+    {
+        $this->nextRun = microtime(true) + $this->intervalMicroseconds;
+    }
+
+    public function __destruct()
+    {
         //Do whatever
     }
 
-    public function run() {
-    }
-
-    private function recalculateNextRun() {
-        $this->nextRun = microtime( true ) + $this->intervalMicroseconds;
+    public function run()
+    {
     }
 }

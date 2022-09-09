@@ -12,28 +12,16 @@ namespace CLImax;
  * Class Std
  * @package CLImax
  */
-class Std extends Module {
+class Std extends Module
+{
     protected $streams = [];
 
     /**
      * @return StdStream
      */
-    public function in() {
+    public function in()
+    {
         return $this->open('php://stdin', 'r');
-    }
-
-    /**
-     * @return StdStream
-     */
-    public function out() {
-        return $this->open('php://stdout', 'w');
-    }
-
-    /**
-     * @return StdStream
-     */
-    public function error() {
-        return $this->open('php://stderr', 'w');
     }
 
     /**
@@ -42,7 +30,8 @@ class Std extends Module {
      *
      * @return StdStream
      */
-    protected function open($streamName, $fileMode) {
+    protected function open($streamName, $fileMode)
+    {
         if (!isset($this->streams[$streamName])) {
             $handle = new StdStream($streamName, $fileMode);
 
@@ -50,5 +39,21 @@ class Std extends Module {
         }
 
         return $this->streams[$streamName];
+    }
+
+    /**
+     * @return StdStream
+     */
+    public function out()
+    {
+        return $this->open('php://stdout', 'w');
+    }
+
+    /**
+     * @return StdStream
+     */
+    public function error()
+    {
+        return $this->open('php://stderr', 'w');
     }
 }

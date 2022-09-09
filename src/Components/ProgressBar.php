@@ -8,158 +8,170 @@
 
 namespace CLImax\Components;
 
+use CLImax\Application;
 use CLImax\DebugLevel;
 
-class ProgressBar {
-	protected $application;
+class ProgressBar
+{
+    protected $application;
 
-	protected $current = 0;
-	protected $total = null;
+    protected $current = 0;
+    protected $total = null;
 
-	protected $message = null;
+    protected $message = null;
 
-	protected $textColour;
-	protected $backgroundColour;
+    protected $textColour;
+    protected $backgroundColour;
 
-	/** @var ProgressBar */
-	protected $subProgressBar;
+    /** @var ProgressBar */
+    protected $subProgressBar;
 
-	/** @var ProgressBar  */
-	protected $parentProgressBar;
+    /** @var ProgressBar */
+    protected $parentProgressBar;
 
-	protected $previouslyOutput = false;
+    protected $previouslyOutput = false;
 
-	protected $disposed = false;
-	protected $debugLevel = DebugLevel::ALWAYS_PRINT;
+    protected $disposed = false;
+    protected $debugLevel = DebugLevel::ALWAYS_PRINT;
 
-	public function dispose() {
-		$this->reset();
+    public function __construct(Application $application, $total, $textColour = null, $backgroundColour = null, $start = 0, $message = null, $parentProgressBar = null)
+    {
+        $this->application = $application;
+        $this->total = $total;
+        $this->textColour = $textColour;
+        $this->backgroundColour = $backgroundColour;
+        $this->current = $start;
+        $this->message = $message;
+        $this->parentProgressBar = $parentProgressBar;
+    }
 
-		$this->disposed = true;
-	}
+    public function dispose()
+    {
+        $this->reset();
 
-	public function isDisposed() {
-		return $this->disposed;
-	}
+        $this->disposed = true;
+    }
 
-	public function __construct(\CLImax\Application $application, $total, $textColour = null, $backgroundColour = null, $start = 0, $message = null, $parentProgressBar = null) {
-		$this->application = $application;
-		$this->total = $total;
-		$this->textColour = $textColour;
-		$this->backgroundColour = $backgroundColour;
-		$this->current = $start;
-		$this->message = $message;
-		$this->parentProgressBar = $parentProgressBar;
-	}
+    public function reset()
+    {
+        $this->application->clear->lastLine();
+    }
 
-	public function setMessage($message, $draw = true) {
-		$this->message = $message;
+    public function setMessage($message, $draw = true)
+    {
+        $this->message = $message;
 
-		if ($draw) {
-			if ($this->parentProgressBar) {
-				$this->parentProgressBar->draw();
-			} else {
-				$this->draw();
-			}
-		}
-	}
+        if ($draw) {
+            if ($this->parentProgressBar) {
+                $this->parentProgressBar->draw();
+            } else {
+                $this->draw();
+            }
+        }
+    }
 
-	public function setCurrent($current, $draw = true) {
-		$this->current = $current;
+    public function draw()
+    {
+        if ($this->previouslyOutput) {
+            $this->reset();
+        }
 
-		if ($draw) {
-			if ($this->parentProgressBar) {
-				$this->parentProgressBar->draw();
-			} else {
-				$this->draw();
-			}
-		}
-	}
+        $message = $this->getProgressString();
 
-	protected function getSubProgressBar() {
-		if (!empty($this->subProgressBar)) {
-			if (!$this->subProgressBar->isDisposed()) {
-				return $this->subProgressBar;
-			} else {
-				$this->subProgressBar = null;
-			}
-		}
+        $this->application->printLine(
+            $this->debugLevel, // debugLevel
+            $message,  // output
+            $this->textColour,  // textColour
+            $this->backgroundColour, // backgroundColour
+            null,  // prependText
+            false // printTime
+        );
 
-		return null;
-	}
+        $this->previouslyOutput = true;
 
-	public function draw() {
-		if ($this->previouslyOutput) {
-			$this->reset();
-		}
+        $subProgressBar = $this->getSubProgressBar();
 
-		$message = $this->getProgressString();
+        if (!empty($subProgressBar)) {
+            $subProgressBar->draw();
+        }
+    }
 
-		$this->application->printLine(
-			$this->debugLevel, // debugLevel
-			$message,  // output
-			$this->textColour,  // textColour
-			$this->backgroundColour, // backgroundColour
-			null,  // prependText
-			false // printTime
-		);
+    public function getProgressString()
+    {
+        $fraction = $this->current / $this->total;
+        $currentFormatted = number_format($this->current, 2);
+        $totalFormatted = number_format($this->total, 2);
+        $percentFormatted = number_format($fraction * 100, 2);
 
-		$this->previouslyOutput = true;
+        if (!empty($this->message)) {
+            $message = sprintf('%s | %d / %d (%s%%)', $this->message, $currentFormatted, $totalFormatted, $percentFormatted);
+        } else {
+            $message = sprintf('%d / %d (%s%%)', $currentFormatted, $totalFormatted, $percentFormatted);
+        }
 
-		$subProgressBar = $this->getSubProgressBar();
+        $progressBarLength = 50;
+        $progressBarCurrent = floor($progressBarLength * $fraction);
+        $progressBarString = '';
 
-		if (!empty($subProgressBar)) {
-			$subProgressBar->draw();
-		}
-	}
+        $completeChar = json_decode('"\u2588"');
+        $incompleteChar = json_decode('"\u2591"');
 
-	public function reset() {
-		$this->application->clear->lastLine();
-	}
+        for ($i = 0; $i < $progressBarCurrent; $i++) {
+            $progressBarString .= $completeChar;
+        }
 
-	public function getProgressString() {
-		$fraction = $this->current / $this->total;
-		$currentFormatted = number_format($this->current, 2);
-		$totalFormatted = number_format($this->total, 2);
-		$percentFormatted = number_format($fraction * 100, 2);
+        for ($i = $progressBarCurrent; $i < $progressBarLength; $i++) {
+            $progressBarString .= $incompleteChar;
+        }
 
-		if (!empty($this->message)) {
-			$message = sprintf('%s | %d / %d (%s%%)', $this->message, $currentFormatted, $totalFormatted, $percentFormatted);
-		} else {
-			$message = sprintf('%d / %d (%s%%)', $currentFormatted, $totalFormatted, $percentFormatted);
-		}
+        return $progressBarString . ' | ' . $message;
+    }
 
-		$progressBarLength = 50;
-		$progressBarCurrent = floor($progressBarLength * $fraction);
-		$progressBarString = '';
+    protected function getSubProgressBar()
+    {
+        if (!empty($this->subProgressBar)) {
+            if (!$this->subProgressBar->isDisposed()) {
+                return $this->subProgressBar;
+            } else {
+                $this->subProgressBar = null;
+            }
+        }
 
-		$completeChar = json_decode('"\u2588"');
-		$incompleteChar = json_decode('"\u2591"');
+        return null;
+    }
 
-		for ($i = 0; $i < $progressBarCurrent; $i++) {
-			$progressBarString .= $completeChar;
-		}
+    public function isDisposed()
+    {
+        return $this->disposed;
+    }
 
-		for ($i = $progressBarCurrent; $i < $progressBarLength; $i++) {
-			$progressBarString .= $incompleteChar;
-		}
+    public function setCurrent($current, $draw = true)
+    {
+        $this->current = $current;
 
-		return $progressBarString . ' | ' . $message;
-	}
+        if ($draw) {
+            if ($this->parentProgressBar) {
+                $this->parentProgressBar->draw();
+            } else {
+                $this->draw();
+            }
+        }
+    }
 
-	public function createSubProgressBar($total, $textColour = null, $backgroundColour = null, $start = 0, $message = null) {
-		if (empty($textColour)) {
-			$textColour = $this->textColour;
-		}
+    public function createSubProgressBar($total, $textColour = null, $backgroundColour = null, $start = 0, $message = null)
+    {
+        if (empty($textColour)) {
+            $textColour = $this->textColour;
+        }
 
-		if (empty($backgroundColour)) {
-			$backgroundColour = $this->backgroundColour;
-		}
+        if (empty($backgroundColour)) {
+            $backgroundColour = $this->backgroundColour;
+        }
 
-		$subProgressBar = new ProgressBar($this->application, $total, $textColour, $backgroundColour, $start, $message);
+        $subProgressBar = new ProgressBar($this->application, $total, $textColour, $backgroundColour, $start, $message);
 
-		$this->subProgressBar = $subProgressBar;
+        $this->subProgressBar = $subProgressBar;
 
-		return $subProgressBar;
-	}
+        return $subProgressBar;
+    }
 }

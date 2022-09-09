@@ -9,12 +9,12 @@
 namespace CLImax;
 
 
-
 /**
  * Class DebugColourBuilder
  * @package CLImax
  */
-class DebugColourBuilder {
+class DebugColourBuilder
+{
     protected $string = '';
 
     protected $savedTextColour = DebugColour::STANDARD;
@@ -32,12 +32,51 @@ class DebugColourBuilder {
      * @param int $backgroundColour
      * @param int $textStyle
      */
-    public function __construct($textColour = DebugColour::STANDARD, $backgroundColour = DebugColour::STANDARD, $textStyle = DebugColour::STYLE_RESET) {
+    public function __construct($textColour = DebugColour::STANDARD, $backgroundColour = DebugColour::STANDARD, $textStyle = DebugColour::STYLE_RESET)
+    {
         $this->string .= DebugColour::reset();
 
         if ($textColour !== null || $backgroundColour !== null || $textStyle !== null) {
             $this->setColour($textColour, $backgroundColour, $textStyle);
         }
+    }
+
+    /**
+     * @return DebugColourBuilder
+     */
+    public function reset()
+    {
+        return $this->resetColour()->resetStyle();
+    }
+
+    /**
+     * @return DebugColourBuilder
+     */
+    public function resetStyle()
+    {
+        return $this->setStyle(DebugColour::STYLE_RESET);
+    }
+
+    /**
+     * @param $textStyle
+     *
+     * @return $this
+     */
+    public function setStyle($textStyle)
+    {
+        $this->textStyle = $textStyle;
+
+        //$this->string .= str_replace("\033", "\\033", DebugColour::styleCode($textStyle));
+
+        return $this; // For chaining
+    }
+
+    /**
+     * @return DebugColourBuilder
+     */
+    public function resetColour()
+    {
+        return $this->setColour(DebugColour::STANDARD, DebugColour::STANDARD);
     }
 
     /**
@@ -47,7 +86,8 @@ class DebugColourBuilder {
      *
      * @return $this
      */
-    public function setColour($textColour = null, $backgroundColour = null, $textStyle = null) {
+    public function setColour($textColour = null, $backgroundColour = null, $textStyle = null)
+    {
         $this->textColour = $textColour;
         $this->backgroundColour = $backgroundColour;
 
@@ -61,102 +101,74 @@ class DebugColourBuilder {
     }
 
     /**
-     * @return \CLImax\DebugColourBuilder
+     * @return DebugColourBuilder
      */
-    public function blink() {
+    public function blink()
+    {
         return $this->setStyle(DebugColour::STYLE_BLINK);
     }
 
     /**
-     * @return \CLImax\DebugColourBuilder
+     * @return DebugColourBuilder
      */
-    public function bold() {
+    public function bold()
+    {
         return $this->setStyle(DebugColour::STYLE_BOLD);
     }
 
     /**
-     * @return \CLImax\DebugColourBuilder
+     * @return DebugColourBuilder
      */
-    public function bright() {
+    public function bright()
+    {
         return $this->setStyle(DebugColour::STYLE_BRIGHT);
     }
 
     /**
-     * @return \CLImax\DebugColourBuilder
+     * @return DebugColourBuilder
      */
-    public function dim() {
+    public function dim()
+    {
         return $this->setStyle(DebugColour::STYLE_DIM);
     }
 
     /**
-     * @return \CLImax\DebugColourBuilder
+     * @return DebugColourBuilder
      */
-    public function hidden() {
+    public function hidden()
+    {
         return $this->setStyle(DebugColour::STYLE_HIDDEN);
     }
 
     /**
-     * @return \CLImax\DebugColourBuilder
+     * @return DebugColourBuilder
      */
-    public function reverse() {
+    public function reverse()
+    {
         return $this->setStyle(DebugColour::STYLE_REVERSE);
     }
 
     /**
-     * @return \CLImax\DebugColourBuilder
+     * @return DebugColourBuilder
      */
-    public function underscore() {
+    public function underscore()
+    {
         return $this->setStyle(DebugColour::STYLE_UNDERSCORE);
     }
 
     /**
-     * @param $textStyle
-     *
      * @return $this
      */
-    public function setStyle($textStyle) {
-        $this->textStyle = $textStyle;
-
-        //$this->string .= str_replace("\033", "\\033", DebugColour::styleCode($textStyle));
-
-        return $this; // For chaining
-    }
-
-    /**
-     * @return \CLImax\DebugColourBuilder
-     */
-    public function resetColour() {
-        return $this->setColour(DebugColour::STANDARD, DebugColour::STANDARD);
-    }
-
-    /**
-     * @return \CLImax\DebugColourBuilder
-     */
-    public function resetStyle() {
-        return $this->setStyle(DebugColour::STYLE_RESET);
-    }
-
-    /**
-     * @return \CLImax\DebugColourBuilder
-     */
-    public function reset() {
-        return $this->resetColour()->resetStyle();
+    public function save()
+    {
+        return $this->saveColour()->saveStyle(); // For chaining
     }
 
     /**
      * @return $this
      */
-    public function saveColour() {
-        $this->savedTextColour = $this->textColour;
-        $this->savedBackgroundColour = $this->backgroundColour;
-
-        return $this; // For chaining
-    }
-
-    /**
-     * @return $this
-     */
-    public function saveStyle() {
+    public function saveStyle()
+    {
         $this->savedTextStyle = $this->textStyle;
 
         return $this; // For chaining
@@ -165,29 +177,36 @@ class DebugColourBuilder {
     /**
      * @return $this
      */
-    public function save() {
-        return $this->saveColour()->saveStyle(); // For chaining
+    public function saveColour()
+    {
+        $this->savedTextColour = $this->textColour;
+        $this->savedBackgroundColour = $this->backgroundColour;
+
+        return $this; // For chaining
     }
 
     /**
-     * @return \CLImax\DebugColourBuilder
+     * @return DebugColourBuilder
      */
-    public function revertColour() {
-        return $this->setColour($this->savedTextColour, $this->savedBackgroundColour);
+    public function revert()
+    {
+        return $this->revertColour()->revertStyle();
     }
 
     /**
-     * @return \CLImax\DebugColourBuilder
+     * @return DebugColourBuilder
      */
-    public function revertStyle() {
+    public function revertStyle()
+    {
         return $this->setStyle($this->savedTextStyle);
     }
 
     /**
-     * @return \CLImax\DebugColourBuilder
+     * @return DebugColourBuilder
      */
-    public function revert() {
-        return $this->revertColour()->revertStyle();
+    public function revertColour()
+    {
+        return $this->setColour($this->savedTextColour, $this->savedBackgroundColour);
     }
 
     /**
@@ -195,7 +214,8 @@ class DebugColourBuilder {
      *
      * @return $this
      */
-    public function writeBool($bool) {
+    public function writeBool($bool)
+    {
         if ($bool) {
             $this->write('YES', DebugColour::WHITE, DebugColour::GREEN);
         } else {
@@ -206,19 +226,6 @@ class DebugColourBuilder {
     }
 
     /**
-     * @param      $format
-     * @param      $arguments
-     * @param null $textColour
-     * @param null $backgroundColour
-     * @param null $textStyle
-     *
-     * @return \CLImax\DebugColourBuilder
-     */
-    public function writef($format, $arguments, $textColour = null, $backgroundColour = null, $textStyle = null) {
-        return $this->write(vsprintf($format, $arguments), $textColour, $backgroundColour, $textStyle);
-    }
-
-    /**
      * @param      $text
      * @param null $textColour
      * @param null $backgroundColour
@@ -226,7 +233,8 @@ class DebugColourBuilder {
      *
      * @return $this
      */
-    public function write($text, $textColour = null, $backgroundColour = null, $textStyle = null) {
+    public function write($text, $textColour = null, $backgroundColour = null, $textStyle = null)
+    {
         $currentTextColour = $this->textColour;
         $currentBackgroundColour = $this->backgroundColour;
         $currentTextStyle = $this->textStyle;
@@ -255,28 +263,45 @@ class DebugColourBuilder {
     }
 
     /**
+     * @param      $format
+     * @param      $arguments
+     * @param null $textColour
+     * @param null $backgroundColour
+     * @param null $textStyle
+     *
+     * @return DebugColourBuilder
+     */
+    public function writef($format, $arguments, $textColour = null, $backgroundColour = null, $textStyle = null)
+    {
+        return $this->write(vsprintf($format, $arguments), $textColour, $backgroundColour, $textStyle);
+    }
+
+    /**
      * @param      $line
      * @param null $lineColour
      * @param null $lineBackgroundColour
      * @param null $lineStyle
      *
-     * @return \CLImax\DebugColourBuilder
+     * @return DebugColourBuilder
      */
-    public function writeLine($line, $lineColour = null, $lineBackgroundColour = null, $lineStyle = null) {
+    public function writeLine($line, $lineColour = null, $lineBackgroundColour = null, $lineStyle = null)
+    {
         return $this->write($line . PHP_EOL, $lineColour, $lineBackgroundColour, $lineStyle);
     }
 
     /**
      * @return string
      */
-    public function toString() {
-        return $this->string;
+    public function __toString()
+    {
+        return $this->toString();
     }
 
     /**
      * @return string
      */
-    public function __toString() {
-        return $this->toString();
+    public function toString()
+    {
+        return $this->string;
     }
 }

@@ -7,26 +7,33 @@
 
 namespace CLImax;
 
+use;
 use CLImax\Enum\Spinner;
+use CLImax\Environments\Environment;
+use CLImax\Environments\Production;
+use CLImax\Event\Events;
 use CLImax\Plugins\AbstractPlugin;
+use Exception;
+use ReflectionClass;
 
 /**
- * @property \CLImax\Size                     $size             A size object defining the size of the CLI prompt
- * @property \CLImax\Environments\Environment $environment      The currently chosen environment
- * @property \CLImax\Event\Events             $events           A Events object used to handle events
- * @property \CLImax\Question                 $question         A Question object used to ask questions
- * @property \CLImax\Fullscreen               $fullscreen       A Fullscreen object used to run fullscreen applications
- * @property \CLImax\Progress                 $progress         A Progress object used to show progress
- * @property \CLImax\Clear                    $clear            A Clear object used to clear text and set cursor
+ * @property Size $size             A size object defining the size of the CLI prompt
+ * @property Environment $environment      The currently chosen environment
+ * @property Events $events           A Events object used to handle events
+ * @property Question $question         A Question object used to ask questions
+ * @property Fullscreen $fullscreen       A Fullscreen object used to run fullscreen applications
+ * @property Progress $progress         A Progress object used to show progress
+ * @property Clear $clear            A Clear object used to clear text and set cursor
  *           position
- * @property \CLImax\OS                       $os               An OS object used to figure out what OS we're running
- * @property \CLImax\STD                      $std              A standard object used for communicating with STDIN,
+ * @property OS $os               An OS object used to figure out what OS we're running
+ * @property STD $std              A standard object used for communicating with STDIN,
  *           STDOUT and STDERR
- * @property \CLImax\Cursor                   $cursor           A cursor object to manipulate the cursor position
- * @property \CLImax\Scroll                   $scroll           A scroll object to manipulate the scroll bar position
- * @property \CLImax\ComponentFactory         $componentFactory A scroll object to manipulate the scroll bar position
+ * @property Cursor $cursor           A cursor object to manipulate the cursor position
+ * @property Scroll $scroll           A scroll object to manipulate the scroll bar position
+ * @property ComponentFactory $componentFactory A scroll object to manipulate the scroll bar position
  */
-abstract class Application {
+abstract class Application
+{
     /**
      * @var bool Whether or not to show padding banners
      */
@@ -53,6 +60,7 @@ abstract class Application {
     protected $disableAnsi = false;
     /** @var OutputPlugin[] */
     protected $outputPlugins = [];
+    protected $automaticallyFlushBuffer = true;
     /**
      * @var int $debugLevel The default debug level - is used to control whether
      * or not to output the text (check the DebugLevel class)
@@ -86,7 +94,7 @@ abstract class Application {
         /**
          * string 'size' A Size object defining the size of the CLI prompt
          */
-        'size'        => 'Size',
+        'size' => 'Size',
         /**
          * string 'defaults' A Defaults object defining the defaults
          */
@@ -94,67 +102,66 @@ abstract class Application {
         /**
          * string 'events' A Events object used to handle events
          */
-        'events'      => 'Event\Events',
+        'events' => 'Event\Events',
         /**
          * string 'question' A Question object used to ask questions
          */
-        'question'    => 'Question',
+        'question' => 'Question',
         /**
          * string 'fullscreen' A Fullscreen object used to run fullscreen applications
          */
-        'fullscreen'  => 'Fullscreen',
+        'fullscreen' => 'Fullscreen',
         /**
          * string 'progress' A Progress object used to show progress
          */
-        'progress'    => 'Progress',
+        'progress' => 'Progress',
         /**
          * string 'clear' A Clear object used to clear text and set cursor position
          */
-        'clear'       => 'Clear',
+        'clear' => 'Clear',
         /**
          * string 'os' An OS object used to figure out what OS we're running
          */
-        'os'          => 'OS',
+        'os' => 'OS',
         /**
          * string 'std' A standard object used for communicating with STDIN, STDOUT and STDERR
          */
-        'std'         => 'STD',
+        'std' => 'STD',
         /**
          * string 'cursor' A cursor object to manipulate the cursor position
          */
-        'cursor'      => 'Cursor',
+        'cursor' => 'Cursor',
         /**
          * string 'scroll' A scroll object to manipulate the scroll bar position
          */
-        'scroll'      => 'Scroll',
+        'scroll' => 'Scroll',
         /**
          * string 'componentFactory' A factory class to create components
          */
-        'componentFactory'      => 'ComponentFactory',
+        'componentFactory' => 'ComponentFactory',
     );
-
-	protected $automaticallyFlushBuffer = true;
 
     /**
      * The constructor - parses arguments and saves the starting
      * time of the script so we can check how long the entire
      * application took to run, when it dies (see __destruct())
      *
-     * @param int        $debugLevel       Which debug level to start the script on - if null, it will default to
+     * @param int $debugLevel Which debug level to start the script on - if null, it will default to
      *                                     $defaults->debugLevel.
-     * @param string     $environmentClass One of the environments from the Environment class
+     * @param string $environmentClass One of the environments from the Environment class
      * @param array|null $defaultsOverride An array to specify what defaults should be overwritten compared to the
      *                                     environment you're in
-     * @param bool       $disableAnsi      Whether or not to disable ANSI codes from output
+     * @param bool $disableAnsi Whether or not to disable ANSI codes from output
      *
-     * @throws \Exception Throws an exception if we're not in a CLI app
+     * @throws Exception Throws an exception if we're not in a CLI app
      */
     public function __construct(
         $debugLevel = null,
         $environmentClass = null,
         $defaultsOverride = null,
         $disableAnsi = false
-    ) {
+    )
+    {
         $this->setEnvironment($environmentClass);
 
         if ($defaultsOverride !== null) {
@@ -181,10 +188,10 @@ abstract class Application {
             Application::$showPaddingBanners = false;
         }
 
-        $cliRows    = $this->arguments->get('cliRows');
+        $cliRows = $this->arguments->get('cliRows');
         $cliColumns = $this->arguments->get('cliColumns');
 
-        if ( ! empty($cliRows) && ! empty($cliColumns)) {
+        if (!empty($cliRows) && !empty($cliColumns)) {
             $this->size->setStaticSize($cliRows, $cliColumns);
         }
 
@@ -202,74 +209,6 @@ abstract class Application {
     }
 
     /**
-     * Checks whether the current application is an utf8 application
-     *
-     * @return bool
-     */
-	public function isUtf8() {
-		return false;
-	}
-
-	/**
-	 * Checks whether or not the current cli can actually prompt (if you run it from a browser this will return false)
-     *
-     * @return bool
-	 */
-    public function canPrompt() {
-	    return (php_sapi_name() === 'cli');
-    }
-
-    /**
-     * Outputs the start banner
-     */
-    public function outputStartBanner() {
-        $this->outputText(PHP_EOL);
-
-        $this->fullLineMessage('START', DebugColour::LIGHT_CYAN, null, null, true, '-', false);
-    }
-
-    /**
-     * Outputs the end banner
-     */
-    public function outputEndBanner() {
-        if ( ! empty($this->startTime)) {
-            $seconds = microtime(true) - $this->startTime;
-            $minutes = 0;
-            $hours   = 0;
-
-            while ($seconds > 3600) {
-                $seconds -= 3600;
-                $hours++;
-            }
-
-            while ($seconds > 60) {
-                $seconds -= 60;
-                $minutes++;
-            }
-
-            $tookTime = $hours . ' hour' . ($hours != 1 ? 's' : '') . ', ' . $minutes . ' minute' . ($minutes != 1 ? 's' : '') . ', ' . sprintf('%01.' . $this->timeDecimals . 'f',
-                    $seconds) . ' second' . ($seconds != 1 ? 's' : '');
-
-            $this->fullLineMessage('END', DebugColour::LIGHT_CYAN, null, null, true, '-', false);
-
-            $colorHighlight = DebugColour::getColourCode(DebugColour::LIGHT_GREEN);
-            $colorMessage   = DebugColour::getColourCode(DebugColour::LIGHT_CYAN);
-            $colorStandard  = DebugColour::getColourCode(DebugColour::STANDARD);
-
-            $message = sprintf("Script [%s] ended at [%s]\n\nIt took [%s]\n\n", $this->scriptName,
-                date('Y-m-d H:i:s'), $tookTime);
-
-            $this->outputText($colorMessage);
-            $this->outputText(preg_replace('~\[([^\]]+)\]~',
-                $colorHighlight . '$1' . $colorStandard . $colorMessage, $message));
-            $this->outputText($colorStandard);
-        } else {
-            $this->verbose('We do not know how long it took seeing as $this->startTime was not set. Did you remember to call parent::__construct?');
-            $this->fullLineMessage('END', DebugColour::LIGHT_CYAN, null, null, true, '-', false);
-        }
-    }
-
-    /**
      * Sets the defaults to relate to the specified environment
      * Warning: This will reset all custom set defaults
      *
@@ -277,12 +216,13 @@ abstract class Application {
      *
      * @return bool Whether the call was OK or not
      */
-    public function setEnvironment($environmentClass) {
+    public function setEnvironment($environmentClass)
+    {
         if (empty($environmentClass)) {
-            $environmentClass = \CLImax\Environments\Production::className();
+            $environmentClass = Production::className();
         }
 
-        if ( ! class_exists($environmentClass)) {
+        if (!class_exists($environmentClass)) {
             $this->fatal(sprintf('Could not find environment class "%s"', $environmentClass));
 
             return false;
@@ -296,12 +236,12 @@ abstract class Application {
     /**
      * Outputs a FATAL message with 'FATAL' prepended by default
      *
-     * @param mixed  $output           The text or object to be parsed through print_r
-     * @param string $prependText      The text to prepend
-     * @param int    $colour           The colour to print the text in (from the DebugColour class)
-     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed $output The text or object to be parsed through print_r
+     * @param string $prependText The text to prepend
+     * @param int $colour The colour to print the text in (from the DebugColour class)
+     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool   $pad
+     * @param bool $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -311,20 +251,21 @@ abstract class Application {
         $colour = DebugColour::RED,
         $backgroundColour = DebugColour::STANDARD,
         $pad = true
-    ) {
+    )
+    {
         return $this->internalDebug(DebugLevel::FATAL, $output, $colour, $backgroundColour, $prependText, $pad);
     }
 
     /**
      * Manipulates the text, and adds padding and such
      *
-     * @param int         $debugLevel       The debug level from the DebugLevel class
-     * @param mixed       $output           The text or object to be parsed through print_r
-     * @param int         $colour           The colour to print the text in (from the DebugColour class)
-     * @param int         $backgroundColour The background colour to print the text in (from the DebugColour class)
-     * @param null|string $prependText      The text to prepend, if null or empty nothing will get prepended
+     * @param int $debugLevel The debug level from the DebugLevel class
+     * @param mixed $output The text or object to be parsed through print_r
+     * @param int $colour The colour to print the text in (from the DebugColour class)
+     * @param int $backgroundColour The background colour to print the text in (from the DebugColour class)
+     * @param null|string $prependText The text to prepend, if null or empty nothing will get prepended
      *
-     * @param bool        $pad
+     * @param bool $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -335,7 +276,8 @@ abstract class Application {
         $backgroundColour = null,
         $prependText = null,
         $pad = true
-    ) {
+    )
+    {
         if ($debugLevel > $this->debugLevel) {
             return $this;
         }
@@ -360,18 +302,18 @@ abstract class Application {
             }
         }
 
-        if ($pad && ! Application::$disableMessagePadding) {
+        if ($pad && !Application::$disableMessagePadding) {
             $outputSplit = explode(PHP_EOL, $output);
 
             $paddingLength = 10 + $this->timeDecimals;
 
-            if ( ! empty($prependText)) {
+            if (!empty($prependText)) {
                 $paddingLength += strlen($prependText) + 2; //1 for the extra space, and 1 for the colon
             }
 
             $paddingChars = str_repeat(' ', $paddingLength);
             for ($i = 1; $i < count($outputSplit); $i++) {
-                $outputSplit[ $i ] = $paddingChars . $outputSplit[ $i ];
+                $outputSplit[$i] = $paddingChars . $outputSplit[$i];
             }
 
             $output = implode(PHP_EOL, $outputSplit);
@@ -383,14 +325,14 @@ abstract class Application {
     /**
      * Prints a single line of text (and appends PHP_EOL)
      *
-     * @param int         $debugLevel       The debug level from the DebugLevel class
-     * @param mixed       $output           The text or object to be parsed through print_r
-     * @param int         $colour           The colour to print the text in (from the DebugColour class)
-     * @param int         $backgroundColour The background colour to print the text in (from the DebugColour class)
-     * @param null|string $prependText      The text to prepend, if null or empty nothing will get prepended
-     * @param bool        $printTime        Whether or not to add a timestamp to the start of the line
+     * @param int $debugLevel The debug level from the DebugLevel class
+     * @param mixed $output The text or object to be parsed through print_r
+     * @param int $colour The colour to print the text in (from the DebugColour class)
+     * @param int $backgroundColour The background colour to print the text in (from the DebugColour class)
+     * @param null|string $prependText The text to prepend, if null or empty nothing will get prepended
+     * @param bool $printTime Whether or not to add a timestamp to the start of the line
      *
-     * @return \CLImax\Application A reference to the application class for chaining
+     * @return Application A reference to the application class for chaining
      */
     public function printLine(
         $debugLevel,
@@ -399,16 +341,17 @@ abstract class Application {
         $backgroundColour = null,
         $prependText = null,
         $printTime = null
-    ) {
+    )
+    {
         $this->printText($debugLevel, $output, $colour, $backgroundColour, $prependText,
             $printTime !== null ? $printTime : $this->justPrintedLine);
 
         if ($this->automaticallyFlushBuffer) {
-        	$i = 0;
+            $i = 0;
 
-	        while ($i++  < 512 && ob_get_level()) {
-		        ob_end_flush();
-	        }
+            while ($i++ < 512 && ob_get_level()) {
+                ob_end_flush();
+            }
         }
 
         $this->newLine();
@@ -421,14 +364,14 @@ abstract class Application {
     /**
      * Prints the text to the CLI
      *
-     * @param int         $debugLevel       The debug level from the DebugLevel class
-     * @param mixed       $output           The text or object to be parsed through print_r
-     * @param int         $colour           The colour to print the text in (from the DebugColour class)
-     * @param int         $backgroundColour The background colour to print the text in (from the DebugColour class)
-     * @param null|string $prependText      The text to prepend, if null or empty nothing will get prepended
-     * @param bool        $printTime        Whether or not to add a timestamp to the start of the line
+     * @param int $debugLevel The debug level from the DebugLevel class
+     * @param mixed $output The text or object to be parsed through print_r
+     * @param int $colour The colour to print the text in (from the DebugColour class)
+     * @param int $backgroundColour The background colour to print the text in (from the DebugColour class)
+     * @param null|string $prependText The text to prepend, if null or empty nothing will get prepended
+     * @param bool $printTime Whether or not to add a timestamp to the start of the line
      *
-     * @return \CLImax\Application A reference to the application class for chaining
+     * @return Application A reference to the application class for chaining
      */
     public function printText(
         $debugLevel,
@@ -437,7 +380,8 @@ abstract class Application {
         $backgroundColour = null,
         $prependText = null,
         $printTime = true
-    ) {
+    )
+    {
         if ($debugLevel > $this->debugLevel) {
             return $this; // For chaining
         }
@@ -450,7 +394,7 @@ abstract class Application {
         }
 
         if ($printTime) {
-            $microTime    = microtime(true);
+            $microTime = microtime(true);
             $microSeconds = substr($microTime, strpos($microTime, '.') + 1);
             $this->outputText(DebugColour::getColourCode(DebugColour::LIGHT_GRAY) . date('H:i:s') . ($this->timeDecimals > 0 ? ',' . substr(sprintf('%0' . $this->timeDecimals . 's',
                         $microSeconds), 0, $this->timeDecimals) : '') . ' ', false);
@@ -494,34 +438,15 @@ abstract class Application {
     }
 
     /**
-     * Mutates text with output plugins added by the addOutputPlugin() method
-     *
-     * @param string $text The text we want to run our output plugins on
-     * @param int    $textColour       The text colour being printed on the line, if available (from the DebugColour class)
-     * @param int    $backgroundColour The background colour being printed on the line, if available (from the DebugColour class)
-     *
-     * @return string The finalized string after the output plugins have done their mutations
-     */
-    public function mutateTextWithOutputPlugins($text, $textColour = null, $backgroundColour = null) {
-        if (!empty($this->outputPlugins)) {
-            // Mutate output with our output plugins
-            foreach ($this->outputPlugins as $outputPlugin) {
-                $text = $outputPlugin->mutateOutput($text, $textColour, $backgroundColour);
-            }
-        }
-
-        return $text;
-    }
-
-    /**
      * Simply outputs the text (maybe it can do something else here in the future, like adding text to a log
      *
      * @param string $text The text to be output
      * @param bool $mutateTextWithOutputPlugins
      *
-     * @return \CLImax\Application A reference to the application class for chaining
+     * @return Application A reference to the application class for chaining
      */
-    public function outputText($text, $mutateTextWithOutputPlugins = true) {
+    public function outputText($text, $mutateTextWithOutputPlugins = true)
+    {
         if ($mutateTextWithOutputPlugins) {
             $text = $this->mutateTextWithOutputPlugins($text);
         }
@@ -536,13 +461,45 @@ abstract class Application {
     }
 
     /**
+     * Mutates text with output plugins added by the addOutputPlugin() method
+     *
+     * @param string $text The text we want to run our output plugins on
+     * @param int $textColour The text colour being printed on the line, if available (from the DebugColour class)
+     * @param int $backgroundColour The background colour being printed on the line, if available (from the DebugColour class)
+     *
+     * @return string The finalized string after the output plugins have done their mutations
+     */
+    public function mutateTextWithOutputPlugins($text, $textColour = null, $backgroundColour = null)
+    {
+        if (!empty($this->outputPlugins)) {
+            // Mutate output with our output plugins
+            foreach ($this->outputPlugins as $outputPlugin) {
+                $text = $outputPlugin->mutateOutput($text, $textColour, $backgroundColour);
+            }
+        }
+
+        return $text;
+    }
+
+    /**
+     * Whether or not to decode utf8 in the application - use ApplicationUtf8 if you want this done automatically
+     *
+     * @return bool
+     */
+    public function decodeUtf8()
+    {
+        return true;
+    }
+
+    /**
      * To be called after caling fatal() either manually or automatically
      *
      * @param string $prepend
      *
-     * @return \CLImax\Application A reference to the application class for chaining
+     * @return Application A reference to the application class for chaining
      */
-    public function exitFatal($prepend = null) {
+    public function exitFatal($prepend = null)
+    {
         if ($this->environment->exitOnfatal) {
             if ($prepend !== null && $prepend !== '') {
                 $this->outputText($prepend);
@@ -559,12 +516,12 @@ abstract class Application {
     /**
      * Outputs a VERBOSE message with 'VERBOSE' prepended by default
      *
-     * @param mixed  $output           The text or object to be parsed through print_r
-     * @param string $prependText      The text to prepend
-     * @param int    $colour           The colour to print the text in (from the DebugColour class)
-     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed $output The text or object to be parsed through print_r
+     * @param string $prependText The text to prepend
+     * @param int $colour The colour to print the text in (from the DebugColour class)
+     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool   $pad
+     * @param bool $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -574,14 +531,16 @@ abstract class Application {
         $colour = DebugColour::LIGHT_PURPLE,
         $backgroundColour = DebugColour::STANDARD,
         $pad = true
-    ) {
+    )
+    {
         return $this->internalDebug(DebugLevel::VERBOSE, $output, $colour, $backgroundColour, $prependText, $pad);
     }
 
     /**
      * Outputs a new line
      */
-    public function newLine() {
+    public function newLine()
+    {
         $this->outputText(PHP_EOL);
     }
 
@@ -592,7 +551,8 @@ abstract class Application {
      *
      * @return $this
      */
-    public function disableAnsi($disableAnsi) {
+    public function disableAnsi($disableAnsi)
+    {
         $this->disableAnsi = $disableAnsi;
 
         return $this;
@@ -605,31 +565,48 @@ abstract class Application {
      *
      * @return Arguments The arguments in an Arguments class
      */
-    private function parseArguments($argumentsRaw) {
+    private function parseArguments($argumentsRaw)
+    {
         return Arguments::init($argumentsRaw);
     }
+
+    /**
+     * The abstract init method that has to be implemented - will be called after the inbuilt construct method
+     */
+    abstract public function init();
 
     /**
      * Returns whether or not padding banners should be shown
      *
      * @return bool
      */
-    public function showPaddingBanners() {
+    public function showPaddingBanners()
+    {
         return Application::$showPaddingBanners;
+    }
+
+    /**
+     * Outputs the start banner
+     */
+    public function outputStartBanner()
+    {
+        $this->outputText(PHP_EOL);
+
+        $this->fullLineMessage('START', DebugColour::LIGHT_CYAN, null, null, true, '-', false);
     }
 
     /**
      * Is used to print a full line message (according to the CLI prompt columns).
      * Note that this message will ALWAYS be output, unless $debugLevel is changed
      *
-     * @param string  $message          The message to be printed in the middle
-     * @param int     $colour           The colour of the text, null is default
-     * @param int     $backgroundColour The colour of the background of the text, null is default
-     * @param int     $debugLevel       The debug level from DebugLevel
-     * @param boolean $addBrackets      Whether or not to add [ and ]'s to the string
-     * @param string  $padString        The string to pad the message towards the center with
+     * @param string $message The message to be printed in the middle
+     * @param int $colour The colour of the text, null is default
+     * @param int $backgroundColour The colour of the background of the text, null is default
+     * @param int $debugLevel The debug level from DebugLevel
+     * @param boolean $addBrackets Whether or not to add [ and ]'s to the string
+     * @param string $padString The string to pad the message towards the center with
      *
-     * @param bool    $padTopBottom
+     * @param bool $padTopBottom
      *
      * @return Application A reference to the application class for chaining
      */
@@ -642,7 +619,8 @@ abstract class Application {
         $padString = '-',
         $padTopBottom = true,
         $maxLength = null
-    ) {
+    )
+    {
         $size = $this->size->columns;
 
         if ($maxLength !== null && $size > $maxLength) {
@@ -687,7 +665,8 @@ abstract class Application {
         return $this; // For chaining
     }
 
-    protected function help() {
+    protected function help()
+    {
         $this->info('Used arguments');
 
         // TODO: Support aliases - this is empty at the moment as no aliases have ever been defined at this point
@@ -696,13 +675,13 @@ abstract class Application {
         foreach ($this->getUsedArguments() as $argument => $description) {
             $colourStringBuilder = DebugColour::buildString()->write('* ')->write($argument, DebugColour::LIGHT_RED);
 
-            if (isset($aliases[ $argument ])) {
-                foreach ($aliases[ $argument ] as $alias) {
+            if (isset($aliases[$argument])) {
+                foreach ($aliases[$argument] as $alias) {
                     $colourStringBuilder->write('*   [')->write($alias, DebugColour::LIGHT_BROWN)->write(']');
                 }
             }
 
-            if ( ! empty($description)) {
+            if (!empty($description)) {
                 $colourStringBuilder->write(' - ')->write($description, DebugColour::LIGHT_BLUE);
             }
 
@@ -715,12 +694,12 @@ abstract class Application {
     /**
      * Outputs an INFO message with 'INFO' prepended by default
      *
-     * @param mixed  $output           The text or object to be parsed through print_r
-     * @param string $prependText      The text to prepend
-     * @param int    $colour           The colour to print the text in (from the DebugColour class)
-     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed $output The text or object to be parsed through print_r
+     * @param string $prependText The text to prepend
+     * @param int $colour The colour to print the text in (from the DebugColour class)
+     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool   $pad
+     * @param bool $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -730,17 +709,19 @@ abstract class Application {
         $colour = DebugColour::LIGHT_GREEN,
         $backgroundColour = DebugColour::STANDARD,
         $pad = true
-    ) {
+    )
+    {
         return $this->internalDebug(DebugLevel::INFO, $output, $colour, $backgroundColour, $prependText, $pad);
     }
 
     /**
      * @return array
      */
-    protected function getUsedArguments() {
+    protected function getUsedArguments()
+    {
         $this->verbose('The Application->getUsedArguments method has not been overwritten, so we are just guessing..');
 
-        $reflectionClass = new \ReflectionClass($this);
+        $reflectionClass = new ReflectionClass($this);
 
         $path = $reflectionClass->getFileName();
 
@@ -756,9 +737,9 @@ abstract class Application {
 
         if (preg_match_all($regex, $applicationContents, $matches, PREG_OFFSET_CAPTURE)) {
             foreach ($matches[0] as $key => $match) {
-                $matchOffset = $matches[0][ $key ][1];
-                $method      = $matches[1][ $key ][0]; // 1 = offset
-                $arguments   = $matches[2][ $key ][0]; // 1 = offset
+                $matchOffset = $matches[0][$key][1];
+                $method = $matches[1][$key][0]; // 1 = offset
+                $arguments = $matches[2][$key][0]; // 1 = offset
 
                 if (preg_match("~^(?:'([^']+)'|([^,]+))~", $arguments, $match)) {
                     $argumentName = $match[1];
@@ -768,13 +749,13 @@ abstract class Application {
 
                 $argumentName = $this->arguments->escapeArgument($argumentName);
 
-                if ( ! empty($argumentName)) {
+                if (!empty($argumentName)) {
                     // We don't know the description soo we're printing generic info
 
                     // Line 1 will always have 0 newlines in front of it, so add 1 to the number of matches
                     $line = preg_match_all('~(\r\n|\n\r|\r|\n)~', substr($applicationContents, 0, $matchOffset)) + 1;
 
-                    $foundArguments[ $argumentName ] = DebugColour::buildString(DebugColour::LIGHT_BLUE)->write($filename)->write(':')->write($line,
+                    $foundArguments[$argumentName] = DebugColour::buildString(DebugColour::LIGHT_BLUE)->write($filename)->write(':')->write($line,
                         DebugColour::BROWN)->write(' (')->write($method, DebugColour::WHITE,
                         DebugColour::RED)->write(')')->toString();
                 }
@@ -785,21 +766,44 @@ abstract class Application {
     }
 
     /**
+     * Writes some text (and does not care about the debug level, as it is ALWAYS_PRINT)
+     *
+     * @param mixed $output The text or object to be parsed through print_r
+     * @param int $colour The colour to print the text in (from the DebugColour class)
+     * @param int $backgroundColour The background colour to print the text in (from the DebugColour class)
+     *
+     * @return Application A reference to the application class for chaining
+     */
+    public function write(
+        $output,
+        $colour = null,
+        $backgroundColour = null
+    )
+    {
+        $this->printText(DebugLevel::ALWAYS_PRINT, $output, $colour, $backgroundColour, null, false);
+
+        $this->justPrintedLine = false;
+
+        return $this; // For chaining
+    }
+
+    /**
      * Quits the program
      *
      * @param int $exitCode
      */
-    public function quit($exitCode = 0) {
+    public function quit($exitCode = 0)
+    {
         exit($exitCode);
     }
 
     /**
-     * @param int        $debugLevel       Which debug level to start the script on - if null, it will default to
+     * @param int $debugLevel Which debug level to start the script on - if null, it will default to
      *                                     $defaults->debugLevel.
-     * @param string     $environmentClass One of the environments from the Environment class
+     * @param string $environmentClass One of the environments from the Environment class
      * @param array|null $defaultsOverride An array to specify what defaults should be overwritten compared to the
      *                                     environment you're in
-     * @param bool       $disableAnsi      Whether or not to disable ANSI codes from output
+     * @param bool $disableAnsi Whether or not to disable ANSI codes from output
      *
      * @return static
      */
@@ -808,14 +812,15 @@ abstract class Application {
         $environmentClass = null,
         $defaultsOverride = null,
         $disableAnsi = false
-    ) {
+    )
+    {
         $class = get_called_class();
 
-        if ( ! isset(static::$instances[ $class ])) {
+        if (!isset(static::$instances[$class])) {
             static::launch($debugLevel, $environmentClass, $defaultsOverride, $disableAnsi);
         }
 
-        return static::$instances[ $class ];
+        return static::$instances[$class];
     }
 
     /**
@@ -823,51 +828,53 @@ abstract class Application {
      * time of the script so we can check how long the entire
      * application took to run, when it dies (see __destruct())
      *
-     * @param int        $debugLevel       Which debug level to start the script on - if null, it will default to
+     * @param int $debugLevel Which debug level to start the script on - if null, it will default to
      *                                     $defaults->debugLevel.
-     * @param string     $environmentClass One of the environments from the Environment class
+     * @param string $environmentClass One of the environments from the Environment class
      * @param array|null $defaultsOverride An array to specify what defaults should be overwritten compared to the
      *                                     environment you're in
-     * @param bool       $disableAnsi      Whether or not to disable ANSI codes from output
-     *
-     * @throws \\Exception Throws an exception if we're not in a CLI app
+     * @param bool $disableAnsi Whether or not to disable ANSI codes from output
      *
      * @return static
+     * @throws \Exception Throws an exception if we're not in a CLI app
+     *
      */
     public static function launch(
         $debugLevel = null,
         $environmentClass = null,
         $defaultsOverride = null,
         $disableAnsi = false
-    ) {
+    )
+    {
         $class = get_called_class();
 
         $application = new $class($debugLevel, $environmentClass, $defaultsOverride, $disableAnsi);
 
-        static::$instances[ $class ] = $application;
+        static::$instances[$class] = $application;
 
         $application->doInit();
 
         return $application;
     }
 
-    public function doInit() {
-        if ( ! $this->initialized) {
+    public function doInit()
+    {
+        if (!$this->initialized) {
             try {
                 $returnCode = $this->init();
 
                 if ($returnCode !== null) {
-                    $returnCodeInt = (int) $returnCode;
+                    $returnCodeInt = (int)$returnCode;
 
                     if ($returnCodeInt < 0 || $returnCodeInt > 254) {
-                        throw new \Exception(sprintf('Could not return a code that is not between 0 and 254 - you tried to return ""'));
+                        throw new Exception(sprintf('Could not return a code that is not between 0 and 254 - you tried to return ""'));
                     }
 
-                    exit((int) $returnCode);
+                    exit((int)$returnCode);
                 }
 
                 exit(0);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->error(sprintf('The main doInit function received an exception: %s', $e->getMessage()));
                 $this->printLine(DebugLevel::ERROR, $e->getTraceAsString(), DebugColour::LIGHT_RED,
                     DebugColour::STANDARD, '', false);
@@ -878,19 +885,14 @@ abstract class Application {
     }
 
     /**
-     * The abstract init method that has to be implemented - will be called after the inbuilt construct method
-     */
-    abstract public function init();
-
-    /**
      * Outputs an ERROR message with 'ERROR' prepended by default
      *
-     * @param mixed  $output           The text or object to be parsed through print_r
-     * @param string $prependText      The text to prepend
-     * @param int    $colour           The colour to print the text in (from the DebugColour class)
-     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed $output The text or object to be parsed through print_r
+     * @param string $prependText The text to prepend
+     * @param int $colour The colour to print the text in (from the DebugColour class)
+     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool   $pad
+     * @param bool $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -900,8 +902,29 @@ abstract class Application {
         $colour = DebugColour::LIGHT_RED,
         $backgroundColour = DebugColour::STANDARD,
         $pad = true
-    ) {
+    )
+    {
         return $this->internalDebug(DebugLevel::ERROR, $output, $colour, $backgroundColour, $prependText, $pad);
+    }
+
+    /**
+     * Checks whether the current application is an utf8 application
+     *
+     * @return bool
+     */
+    public function isUtf8()
+    {
+        return false;
+    }
+
+    /**
+     * Checks whether or not the current cli can actually prompt (if you run it from a browser this will return false)
+     *
+     * @return bool
+     */
+    public function canPrompt()
+    {
+        return (php_sapi_name() === 'cli');
     }
 
     /**
@@ -911,15 +934,16 @@ abstract class Application {
      *
      * @return mixed A handle for whatever module was requested
      */
-    public function __get($module) {
-        if (isset($this->moduleClasses[ $module ])) {
-            if ( ! isset($this->moduleInstances[ $module ])) {
-                $class = '\\CLImax\\' . $this->moduleClasses[ $module ];
+    public function __get($module)
+    {
+        if (isset($this->moduleClasses[$module])) {
+            if (!isset($this->moduleInstances[$module])) {
+                $class = '\\CLImax\\' . $this->moduleClasses[$module];
 
-                $this->moduleInstances[ $module ] = new $class($this);
+                $this->moduleInstances[$module] = new $class($this);
             }
 
-            return $this->moduleInstances[ $module ];
+            return $this->moduleInstances[$module];
         } else {
             $this->fatal('Unknown module "' . $module . '"');
             $this->verbose('Available modules are:');
@@ -935,8 +959,9 @@ abstract class Application {
     /**
      * The destructor - prints the amount of time that the application has run
      */
-    public function __destruct() {
-        if ( ! static::isCli()) {
+    public function __destruct()
+    {
+        if (!static::isCli()) {
             return;
         }
 
@@ -952,8 +977,51 @@ abstract class Application {
      *
      * @return bool
      */
-    public static function isCli() {
+    public static function isCli()
+    {
         return php_sapi_name() === 'cli';
+    }
+
+    /**
+     * Outputs the end banner
+     */
+    public function outputEndBanner()
+    {
+        if (!empty($this->startTime)) {
+            $seconds = microtime(true) - $this->startTime;
+            $minutes = 0;
+            $hours = 0;
+
+            while ($seconds > 3600) {
+                $seconds -= 3600;
+                $hours++;
+            }
+
+            while ($seconds > 60) {
+                $seconds -= 60;
+                $minutes++;
+            }
+
+            $tookTime = $hours . ' hour' . ($hours != 1 ? 's' : '') . ', ' . $minutes . ' minute' . ($minutes != 1 ? 's' : '') . ', ' . sprintf('%01.' . $this->timeDecimals . 'f',
+                    $seconds) . ' second' . ($seconds != 1 ? 's' : '');
+
+            $this->fullLineMessage('END', DebugColour::LIGHT_CYAN, null, null, true, '-', false);
+
+            $colorHighlight = DebugColour::getColourCode(DebugColour::LIGHT_GREEN);
+            $colorMessage = DebugColour::getColourCode(DebugColour::LIGHT_CYAN);
+            $colorStandard = DebugColour::getColourCode(DebugColour::STANDARD);
+
+            $message = sprintf("Script [%s] ended at [%s]\n\nIt took [%s]\n\n", $this->scriptName,
+                date('Y-m-d H:i:s'), $tookTime);
+
+            $this->outputText($colorMessage);
+            $this->outputText(preg_replace('~\[([^\]]+)\]~',
+                $colorHighlight . '$1' . $colorStandard . $colorMessage, $message));
+            $this->outputText($colorStandard);
+        } else {
+            $this->verbose('We do not know how long it took seeing as $this->startTime was not set. Did you remember to call parent::__construct?');
+            $this->fullLineMessage('END', DebugColour::LIGHT_CYAN, null, null, true, '-', false);
+        }
     }
 
     /**
@@ -961,7 +1029,8 @@ abstract class Application {
      *
      * @return string
      */
-    public function getPath($path) {
+    public function getPath($path)
+    {
         return realpath(dirname(__FILE__) . '../' . preg_replace('~[/\\]+~', DIRECTORY_SEPARATOR, $path));
     }
 
@@ -970,7 +1039,8 @@ abstract class Application {
      *
      * @return int The debug level from the DebugLevel
      */
-    public function getDebugLevel() {
+    public function getDebugLevel()
+    {
         return $this->debugLevel;
     }
 
@@ -982,31 +1052,32 @@ abstract class Application {
      * @param string|int $debugLevel The debug level from the DebugLevel class or 'always', 'success', 'fatal',
      *                               'error', 'warning', 'info', 'debug' or 'verbose' with any capitalization
      *
-     * @return \CLImax\Application A reference to the application class for chaining
+     * @return Application A reference to the application class for chaining
      */
-    public function setDebugLevel($debugLevel = DebugLevel::VERBOSE) {
+    public function setDebugLevel($debugLevel = DebugLevel::VERBOSE)
+    {
         if (is_string($debugLevel)) {
             $debugTextLevels = array(
-                'always'  => DebugLevel::ALWAYS_PRINT,
+                'always' => DebugLevel::ALWAYS_PRINT,
                 'success' => DebugLevel::SUCCESS,
-                'fatal'   => DebugLevel::FATAL,
-                'error'   => DebugLevel::ERROR,
+                'fatal' => DebugLevel::FATAL,
+                'error' => DebugLevel::ERROR,
                 'warning' => DebugLevel::WARNING,
-                'info'    => DebugLevel::INFO,
-                'debug'   => DebugLevel::DEBUG,
+                'info' => DebugLevel::INFO,
+                'debug' => DebugLevel::DEBUG,
                 'verbose' => DebugLevel::VERBOSE,
             );
 
             $debugLevel = strtolower($debugLevel);
 
-            if (isset($debugTextLevels[ $debugLevel ])) {
-                $debugLevel = $debugTextLevels[ $debugLevel ];
+            if (isset($debugTextLevels[$debugLevel])) {
+                $debugLevel = $debugTextLevels[$debugLevel];
             } else {
                 $this->fatal('Cannot set debug level to ' . $debugLevel . ' as there is no such debug level');
                 $debugLevel = null;
             }
         } else {
-            $debugLevel = (int) $debugLevel;
+            $debugLevel = (int)$debugLevel;
 
             if ($debugLevel < DebugLevel::ALWAYS_PRINT || $debugLevel > DebugLevel::VERBOSE) {
                 $this->fatal('Cannot set debug level to ' . $debugLevel . ' as it needs to be between ' . DebugLevel::ALWAYS_PRINT . ' and ' . DebugLevel::VERBOSE);
@@ -1025,13 +1096,13 @@ abstract class Application {
      * Prints a single line of text (and appends PHP_EOL, and does not care about the debug level, as it is
      * ALWAYS_PRINT)
      *
-     * @param mixed       $output           The text or object to be parsed through print_r
-     * @param int         $colour           The colour to print the text in (from the DebugColour class)
-     * @param int         $backgroundColour The background colour to print the text in (from the DebugColour class)
-     * @param null|string $prependText      The text to prepend, if null or empty nothing will get prepended
-     * @param bool        $printTime        Whether or not to add a timestamp to the start of the line
+     * @param mixed $output The text or object to be parsed through print_r
+     * @param int $colour The colour to print the text in (from the DebugColour class)
+     * @param int $backgroundColour The background colour to print the text in (from the DebugColour class)
+     * @param null|string $prependText The text to prepend, if null or empty nothing will get prepended
+     * @param bool $printTime Whether or not to add a timestamp to the start of the line
      *
-     * @return \CLImax\Application A reference to the application class for chaining
+     * @return Application A reference to the application class for chaining
      */
     public function writeLine(
         $output,
@@ -1039,30 +1110,10 @@ abstract class Application {
         $backgroundColour = null,
         $prependText = null,
         $printTime = true
-    ) {
+    )
+    {
         return $this->printLine(DebugLevel::ALWAYS_PRINT, $output, $colour, $backgroundColour, $prependText,
             $printTime);
-    }
-
-    /**
-     * Writes some text (and does not care about the debug level, as it is ALWAYS_PRINT)
-     *
-     * @param mixed $output           The text or object to be parsed through print_r
-     * @param int   $colour           The colour to print the text in (from the DebugColour class)
-     * @param int   $backgroundColour The background colour to print the text in (from the DebugColour class)
-     *
-     * @return \CLImax\Application A reference to the application class for chaining
-     */
-    public function write(
-        $output,
-        $colour = null,
-        $backgroundColour = null
-    ) {
-        $this->printText(DebugLevel::ALWAYS_PRINT, $output, $colour, $backgroundColour, null, false);
-
-        $this->justPrintedLine = false;
-
-        return $this; // For chaining
     }
 
     /**
@@ -1072,7 +1123,8 @@ abstract class Application {
      *
      * @return bool Returns the old value
      */
-    public function disableMessagePadding($disable = true) {
+    public function disableMessagePadding($disable = true)
+    {
         $currentValue = Application::$disableMessagePadding;
 
         Application::$disableMessagePadding = $disable;
@@ -1083,12 +1135,12 @@ abstract class Application {
     /**
      * Outputs a SUCCESS message with 'SUCCESS' prepended by default
      *
-     * @param mixed  $output           The text or object to be parsed through print_r
-     * @param string $prependText      The text to prepend
-     * @param int    $colour           The colour to print the text in (from the DebugColour class)
-     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed $output The text or object to be parsed through print_r
+     * @param string $prependText The text to prepend
+     * @param int $colour The colour to print the text in (from the DebugColour class)
+     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool   $pad
+     * @param bool $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -1098,7 +1150,8 @@ abstract class Application {
         $colour = DebugColour::GREEN,
         $backgroundColour = DebugColour::STANDARD,
         $pad = true
-    ) {
+    )
+    {
         return $this->internalDebug(DebugLevel::SUCCESS, $output, $colour, $backgroundColour, $prependText, $pad);
     }
 
@@ -1106,12 +1159,12 @@ abstract class Application {
      * Outputs a FATAL message with 'FATAL' prepended by default (however it does NOT exit even though exitOnfatal is
      * true)
      *
-     * @param mixed  $output           The text or object to be parsed through print_r
-     * @param string $prependText      The text to prepend
-     * @param int    $colour           The colour to print the text in (from the DebugColour class)
-     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed $output The text or object to be parsed through print_r
+     * @param string $prependText The text to prepend
+     * @param int $colour The colour to print the text in (from the DebugColour class)
+     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool   $pad
+     * @param bool $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -1121,7 +1174,8 @@ abstract class Application {
         $colour = DebugColour::RED,
         $backgroundColour = DebugColour::STANDARD,
         $pad = true
-    ) {
+    )
+    {
         $exitOnFatal = $this->environment->exitOnfatal;
 
         $this->environment->exitOnfatal = false;
@@ -1136,12 +1190,12 @@ abstract class Application {
     /**
      * Outputs a WARNING message with 'WARNING' prepended by default
      *
-     * @param mixed  $output           The text or object to be parsed through print_r
-     * @param string $prependText      The text to prepend
-     * @param int    $colour           The colour to print the text in (from the DebugColour class)
-     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed $output The text or object to be parsed through print_r
+     * @param string $prependText The text to prepend
+     * @param int $colour The colour to print the text in (from the DebugColour class)
+     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool   $pad
+     * @param bool $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -1151,19 +1205,20 @@ abstract class Application {
         $colour = DebugColour::YELLOW,
         $backgroundColour = DebugColour::STANDARD,
         $pad = true
-    ) {
+    )
+    {
         return $this->internalDebug(DebugLevel::WARNING, $output, $colour, $backgroundColour, $prependText, $pad);
     }
 
     /**
      * Outputs a DEBUG message with 'DEBUG' prepended by default
      *
-     * @param mixed  $output           The text or object to be parsed through print_r
-     * @param string $prependText      The text to prepend
-     * @param int    $colour           The colour to print the text in (from the DebugColour class)
-     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param mixed $output The text or object to be parsed through print_r
+     * @param string $prependText The text to prepend
+     * @param int $colour The colour to print the text in (from the DebugColour class)
+     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @param bool   $pad
+     * @param bool $pad
      *
      * @return Application A reference to the application class for chaining
      */
@@ -1173,29 +1228,31 @@ abstract class Application {
         $colour = DebugColour::STANDARD,
         $backgroundColour = DebugColour::STANDARD,
         $pad = true
-    ) {
+    )
+    {
         return $this->internalDebug(DebugLevel::DEBUG, $output, $colour, $backgroundColour, $prependText, $pad);
     }
 
     /**
      * Sleeps for X amount of seconds
      *
-     * @param float  $seconds The amount of seconds to sleep for (0.1 would be 1/10th of a second)
+     * @param float $seconds The amount of seconds to sleep for (0.1 would be 1/10th of a second)
      * @param string $spinner The spinner sprite to use when animating (or an empty() value if you don't want to use a
      *                        spinner) - see the \CLImax\Enum\Spinner class
-     * @param float  $spinnerUpdateIntervalSeconds
+     * @param float $spinnerUpdateIntervalSeconds
      *
-     * @return \CLImax\Application A reference to the application class for chaining
+     * @return Application A reference to the application class for chaining
      */
-    public function sleep($seconds, $spinner = Spinner::SIMPLE, $spinnerUpdateIntervalSeconds = 0.1) {
+    public function sleep($seconds, $spinner = Spinner::SIMPLE, $spinnerUpdateIntervalSeconds = 0.1)
+    {
         if ($seconds <= 0) {
             return $this;
         }
 
-        $microUpdateInterval   = $spinnerUpdateIntervalSeconds * 1000000;
+        $microUpdateInterval = $spinnerUpdateIntervalSeconds * 1000000;
         $microSecondsSleepTime = $seconds * 1000000;
 
-        if ( ! empty($spinner) && $microSecondsSleepTime > $microUpdateInterval) {
+        if (!empty($spinner) && $microSecondsSleepTime > $microUpdateInterval) {
             $sleepTimeRemaining = $microSecondsSleepTime;
 
             if ($this->decodeUtf8()) {
@@ -1204,8 +1261,8 @@ abstract class Application {
             }
 
             $spinnerAmount = mb_strlen($spinner, 'utf-8');
-            $spinnerIndex  = 0;
-            $iteration     = 0;
+            $spinnerIndex = 0;
+            $iteration = 0;
 
             while ($sleepTimeRemaining > 0) {
                 $sleepTime = min($sleepTimeRemaining, $microUpdateInterval);
@@ -1242,11 +1299,12 @@ abstract class Application {
         return $this;
     }
 
-    private function secondsToTime($seconds) {
-        $oneHour   = 3600;
+    private function secondsToTime($seconds)
+    {
+        $oneHour = 3600;
         $oneMinute = 60;
 
-        $hours   = 0;
+        $hours = 0;
         $minutes = 0;
 
         while ($seconds >= $oneHour) {
@@ -1261,7 +1319,7 @@ abstract class Application {
             $seconds -= $oneMinute;
         }
 
-        $_seconds     = floor($seconds);
+        $_seconds = floor($seconds);
         $milliseconds = round(($seconds - $_seconds) * 10);
 
         return sprintf('%02s:%02s:%02s,%s', $hours, $minutes, $_seconds, $milliseconds);
@@ -1272,31 +1330,33 @@ abstract class Application {
      *
      * Outputs a separator that stretches to the edge of the CMD
      *
-     * @param string $separator        What character the separator should be made of
-     * @param int    $colour           The colour to print the text in (from the DebugColour class)
-     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param string $separator What character the separator should be made of
+     * @param int $colour The colour to print the text in (from the DebugColour class)
+     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @return \CLImax\Application A reference to the application class for chaining
+     * @return Application A reference to the application class for chaining
      */
-    public function seperator($separator = '-', $colour = DebugColour::LIGHT_RED, $backgroundColour = null) {
+    public function seperator($separator = '-', $colour = DebugColour::LIGHT_RED, $backgroundColour = null)
+    {
         return call_user_func_array([$this, 'separator'], func_get_args());
     }
 
     /**
      * Outputs a separator that stretches to the edge of the CMD
      *
-     * @param string $separator        What character the separator should be made of
-     * @param int    $colour           The colour to print the text in (from the DebugColour class)
-     * @param int    $backgroundColour The colour to print the background of the text in (from the DebugColour class)
+     * @param string $separator What character the separator should be made of
+     * @param int $colour The colour to print the text in (from the DebugColour class)
+     * @param int $backgroundColour The colour to print the background of the text in (from the DebugColour class)
      *
-     * @return \CLImax\Application A reference to the application class for chaining
+     * @return Application A reference to the application class for chaining
      */
-    public function separator($separator = '-', $colour = DebugColour::LIGHT_RED, $backgroundColour = null) {
+    public function separator($separator = '-', $colour = DebugColour::LIGHT_RED, $backgroundColour = null)
+    {
         $seperatorLength = mb_strlen($separator);
 
         $columns = $this->size->columns;
 
-        $repetitions       = floor($columns / $seperatorLength);
+        $repetitions = floor($columns / $seperatorLength);
         $repetitionsLength = $seperatorLength * $repetitions;
 
         $seperatorLine = str_repeat($separator, $repetitions) . mb_substr($separator, 0, $columns - $repetitionsLength);
@@ -1307,12 +1367,13 @@ abstract class Application {
     /**
      * Pauses the application (and waits for enter)
      *
-     * @param null   $pauseMessage
+     * @param null $pauseMessage
      * @param string $pauseMessageType
      *
      * @return string
      */
-    public function pause($pauseMessage = null, $pauseMessageType = 'info') {
+    public function pause($pauseMessage = null, $pauseMessageType = 'info')
+    {
         if (empty($pauseMessage)) {
             $pauseMessage = 'Press enter to continue';
         }
@@ -1326,9 +1387,10 @@ abstract class Application {
     /**
      * @param array $rows
      *
-     * @return \CLImax\Table
+     * @return Table
      */
-    public function table($rows = []) {
+    public function table($rows = [])
+    {
         $table = new Table($this, $rows);
 
         return $table;
@@ -1337,21 +1399,23 @@ abstract class Application {
     /**
      * @param array $data
      *
-     * @return \CLImax\ListView
+     * @return ListView
      */
-    public function listView($data = null) {
+    public function listView($data = null)
+    {
         $listView = new ListView($this, $data);
 
         return $listView;
     }
 
     /**
-     * @param int  $offset
+     * @param int $offset
      * @param bool $escape
      *
      * @return string
      */
-    public function getRawArguments($offset = 0, $escape = true) {
+    public function getRawArguments($offset = 0, $escape = true)
+    {
         if (empty($_SERVER['argv'])) {
             return '';
         }
@@ -1359,7 +1423,7 @@ abstract class Application {
         $arguments = [];
 
         for ($i = $offset; $i < $_SERVER['argc']; $i++) {
-            $arguments[] = $_SERVER['argv'][ $i ];
+            $arguments[] = $_SERVER['argv'][$i];
         }
 
         if ($escape) {
@@ -1374,50 +1438,45 @@ abstract class Application {
      *
      * @return array
      */
-    public function getModuleClasses() {
+    public function getModuleClasses()
+    {
         return $this->moduleClasses;
     }
 
     /**
-     * @param string   $format         The format with the content replaced by %s (eg. "{{%s}}" would call the callback
+     * @param string $format The format with the content replaced by %s (eg. "{{%s}}" would call the callback
      *                                 with whatever is inside of the double brackets)
      *
      * @param callable $pluginCallback The callback to be called to mutate text
      *
      * @return $this An instance of the application for chaining
      */
-    public function addOutputPlugin($format, $pluginCallback) {
+    public function addOutputPlugin($format, $pluginCallback)
+    {
         $this->outputPlugins[] = new OutputPlugin($format, $pluginCallback);
 
         return $this;
     }
 
     /**
-     * Whether or not to decode utf8 in the application - use ApplicationUtf8 if you want this done automatically
+     * Change whether or not all buffers should automatically be flushed when outputting
      *
-     * @return bool
+     * @param bool $automaticallyFlushBuffer
+     *
+     * @return $this
      */
-    public function decodeUtf8() {
-        return true;
+    public function automaticallyFlushBuffer($automaticallyFlushBuffer)
+    {
+        $this->automaticallyFlushBuffer = $automaticallyFlushBuffer;
+
+        return $this;
     }
 
-	/**
-	 * Change whether or not all buffers should automatically be flushed when outputting
-	 *
-	 * @param bool $automaticallyFlushBuffer
-	 *
-	 * @return $this
-	 */
-	public function automaticallyFlushBuffer($automaticallyFlushBuffer) {
-		$this->automaticallyFlushBuffer = $automaticallyFlushBuffer;
-
-		return $this;
-	}
-
     /**
-     * @param \CLImax\Plugins\AbstractPlugin $plugin
+     * @param AbstractPlugin $plugin
      */
-	public function registerPlugin(AbstractPlugin $plugin) {
-	    $plugin->register($this);
+    public function registerPlugin(AbstractPlugin $plugin)
+    {
+        $plugin->register($this);
     }
 }

@@ -12,7 +12,8 @@ namespace CLImax\Enum;
  * Class QuestionDisplay
  * @package CLImax
  */
-class QuestionDisplay {
+class QuestionDisplay
+{
     /**
      * Consider the following array as the possible choices: array('foo' => 'bar')
      */

@@ -9,18 +9,10 @@
 namespace CLImax\Trace;
 
 
+use Exception;
+
 class Trace
 {
-    public static function fromException(\Exception $e) {
-        return static::init($e->getTrace());
-    }
-
-    public static function init($trace) {
-        $trace = new Trace($trace);
-
-        return $trace;
-    }
-
     protected $trace;
 
     /**
@@ -28,10 +20,23 @@ class Trace
      *
      * @param array $trace
      */
-    public function __construct($trace) {
+    public function __construct($trace)
+    {
         foreach ($trace as $traceLine) {
             $this->trace[] = new TraceLine($traceLine);
         }
+    }
+
+    public static function fromException(Exception $e)
+    {
+        return static::init($e->getTrace());
+    }
+
+    public static function init($trace)
+    {
+        $trace = new Trace($trace);
+
+        return $trace;
     }
 
     /**
@@ -39,7 +44,8 @@ class Trace
      *
      * @return TraceLine[]
      */
-    public function getTrace($startIndex = 0) {
+    public function getTrace($startIndex = 0)
+    {
         return array_slice($this->trace, $startIndex);
     }
 }

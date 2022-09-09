@@ -12,7 +12,8 @@ namespace CLImax\Event;
  * Class IntervalType
  * @package CLImax\Event
  */
-class IntervalType {
+class IntervalType
+{
     const MILLISECONDS = 1;
     const SECONDS = 2;
     const MINUTES = 3;

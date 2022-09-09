@@ -12,7 +12,8 @@ namespace CLImax\Enum;
  * Class QuestionStyle
  * @package CLImax
  */
-class QuestionStyle {
+class QuestionStyle
+{
     /**
      * Consider the following array of possible choices:
      *     array(

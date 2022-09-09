@@ -8,6 +8,8 @@
 
 namespace CLImax\Enum;
 
+use Exception;
+
 /**
  * Class BoxSet
  * @package CLImax
@@ -19,67 +21,67 @@ class BoxSet
     const DOS_DOUBLE = 'dosDouble';
 
     private static $sets = [
-        BoxSet::SIMPLE     => [
-            'top'    => [
-                'left'  => '+',
+        BoxSet::SIMPLE => [
+            'top' => [
+                'left' => '+',
                 'cross' => '+',
                 'right' => '+',
             ],
             'middle' => [
-                'left'  => '+',
+                'left' => '+',
                 'cross' => '+',
                 'right' => '+',
             ],
             'bottom' => [
-                'left'  => '+',
+                'left' => '+',
                 'cross' => '+',
                 'right' => '+',
             ],
-            'line'   => [
+            'line' => [
                 'horizontal' => '-',
-                'vertical'   => '|',
+                'vertical' => '|',
             ],
         ],
         BoxSet::DOS_SINGLE => [
-            'top'    => [
-                'left'  => 0xda, //'┌',
+            'top' => [
+                'left' => 0xda, //'┌',
                 'cross' => 0xc2, //'┬',
                 'right' => 0xbf, //'┐',
             ],
             'middle' => [
-                'left'  => 0xc3, //'├',
+                'left' => 0xc3, //'├',
                 'cross' => 0xc5, //'┼',
                 'right' => 0xb4, //'┤',
             ],
             'bottom' => [
-                'left'  => 0xc0, //'└',
+                'left' => 0xc0, //'└',
                 'cross' => 0xc1, //'┴',
                 'right' => 0xd9, //'┘',
             ],
-            'line'   => [
+            'line' => [
                 'horizontal' => 0xc4, //'─',
-                'vertical'   => 0xb3, //'│',
+                'vertical' => 0xb3, //'│',
             ],
         ],
         BoxSet::DOS_DOUBLE => [
-            'top'    => [
-                'left'  => 0xc9, //'╔',
+            'top' => [
+                'left' => 0xc9, //'╔',
                 'cross' => 0xcb, //'╦',
                 'right' => 0xbb, //'╗',
             ],
             'middle' => [
-                'left'  => 0xcc, //'╠',
+                'left' => 0xcc, //'╠',
                 'cross' => 0xce, //'╬',
                 'right' => 0xb9, //'╣',
             ],
             'bottom' => [
-                'left'  => 0xc8, //'╚',
+                'left' => 0xc8, //'╚',
                 'cross' => 0xca, //'╩',
                 'right' => 0xbc, //'╝',
             ],
-            'line'   => [
+            'line' => [
                 'horizontal' => 0xcd, //'═',
-                'vertical'   => 0xba, //'║',
+                'vertical' => 0xba, //'║',
             ],
         ],
     ];
@@ -90,13 +92,13 @@ class BoxSet
      * @param $boxSet
      *
      * @return mixed
-     * @throws \Exception
+     * @throws Exception
      */
     public static function get($boxSet)
     {
         if (!isset(self::$_sets[$boxSet])) {
             if (!isset(self::$sets[$boxSet])) {
-                throw new \Exception(sprintf('Box set %s not found', $boxSet));
+                throw new Exception(sprintf('Box set %s not found', $boxSet));
             }
 
             $set = self::$sets[$boxSet];

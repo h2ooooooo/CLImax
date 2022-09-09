@@ -12,6 +12,7 @@ namespace CLImax\Environments;
 /**
  * Suggested application defaults for developement
  */
-class DevelopmentNoInternalDebugging extends Development {
+class DevelopmentNoInternalDebugging extends Development
+{
     public $internalDebugging = false;
 }

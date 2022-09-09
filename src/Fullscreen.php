@@ -11,13 +11,17 @@ namespace CLImax;
  * Class Fullscreen
  * @package CLImax
  */
-class Fullscreen extends Module {
-	public function start() {
-	}
+class Fullscreen extends Module
+{
+    public function start()
+    {
+    }
 
-	public function draw() {
-	}
+    public function draw()
+    {
+    }
 
-	public function end() {
-	}
+    public function end()
+    {
+    }
 }

@@ -14,7 +14,7 @@ class LoggerInterface implements \Psr\Log\LoggerInterface
     /**
      * A reference to the CLImax application
      *
-     * @var \CLImax\Application $application
+     * @var Application $application
      */
     protected $application;
 
@@ -24,13 +24,13 @@ class LoggerInterface implements \Psr\Log\LoggerInterface
      * @var array
      */
     protected $debugColours = [
-        'debug'     => DebugColour::WHITE,
-        'info'      => DebugColour::GREEN,
-        'notice'    => DebugColour::CYAN,
-        'warning'   => DebugColour::YELLOW,
-        'error'     => DebugColour::RED,
-        'critical'  => [DebugColour::WHITE, DebugColour::YELLOW],
-        'alert'     => [DebugColour::WHITE, DebugColour::LIGHT_RED],
+        'debug' => DebugColour::WHITE,
+        'info' => DebugColour::GREEN,
+        'notice' => DebugColour::CYAN,
+        'warning' => DebugColour::YELLOW,
+        'error' => DebugColour::RED,
+        'critical' => [DebugColour::WHITE, DebugColour::YELLOW],
+        'alert' => [DebugColour::WHITE, DebugColour::LIGHT_RED],
         'emergency' => [DebugColour::WHITE, DebugColour::RED],
     ];
 
@@ -40,24 +40,66 @@ class LoggerInterface implements \Psr\Log\LoggerInterface
      * @var array
      */
     protected $debugLevels = [
-        'debug'     => DebugLevel::DEBUG,
-        'info'      => DebugLevel::INFO,
-        'notice'    => DebugLevel::INFO,
-        'warning'   => DebugLevel::WARNING,
-        'error'     => DebugLevel::ERROR,
-        'critical'  => DebugLevel::ERROR, //DebugLevel::FATAL,
-        'alert'     => DebugLevel::ERROR, //DebugLevel::FATAL,
+        'debug' => DebugLevel::DEBUG,
+        'info' => DebugLevel::INFO,
+        'notice' => DebugLevel::INFO,
+        'warning' => DebugLevel::WARNING,
+        'error' => DebugLevel::ERROR,
+        'critical' => DebugLevel::ERROR, //DebugLevel::FATAL,
+        'alert' => DebugLevel::ERROR, //DebugLevel::FATAL,
         'emergency' => DebugLevel::ERROR, //DebugLevel::FATAL,
     ];
 
     /**
-     * Whether or not to print time
+     * The CLImax LoggerInterface constructor.
      *
-     * @return bool
+     * @param Application $application
      */
-    public function printTime()
+    public function __construct(Application $application)
     {
-        return true;
+        $this->application = $application;
+    }
+
+    /**
+     * System is unusable.
+     *
+     * @param string $message
+     * @param array $context
+     *
+     * @return void
+     */
+    public function emergency($message, array $context = array())
+    {
+        $this->log('emergency', $message, $context);
+    }
+
+    /**
+     * Logs with an arbitrary level.
+     *
+     * @param mixed $level
+     * @param string $message
+     * @param array $context
+     *
+     * @return void
+     */
+    public function log($level, $message, array $context = array())
+    {
+        $debugColour = $this->getDebugColour($level);
+
+        $backgroundColour = null;
+
+        if (is_array($debugColour)) {
+            $textColour = $debugColour[0];
+
+            if (isset($debugColour[1])) {
+                $backgroundColour = $debugColour[1];
+            }
+        } else {
+            $textColour = $debugColour;
+        }
+
+        $this->application->printLine($this->getDebugLevel($level), $message, $textColour, $backgroundColour,
+            strtoupper($level), $this->printTime());
     }
 
     /**
@@ -93,26 +135,13 @@ class LoggerInterface implements \Psr\Log\LoggerInterface
     }
 
     /**
-     * The CLImax LoggerInterface constructor.
+     * Whether or not to print time
      *
-     * @param \CLImax\Application $application
+     * @return bool
      */
-    public function __construct(Application $application)
+    public function printTime()
     {
-        $this->application = $application;
-    }
-
-    /**
-     * System is unusable.
-     *
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    public function emergency($message, array $context = array())
-    {
-        $this->log('emergency', $message, $context);
+        return true;
     }
 
     /**
@@ -122,7 +151,7 @@ class LoggerInterface implements \Psr\Log\LoggerInterface
      * trigger the SMS alerts and wake you up.
      *
      * @param string $message
-     * @param array  $context
+     * @param array $context
      *
      * @return void
      */
@@ -137,7 +166,7 @@ class LoggerInterface implements \Psr\Log\LoggerInterface
      * Example: Application component unavailable, unexpected exception.
      *
      * @param string $message
-     * @param array  $context
+     * @param array $context
      *
      * @return void
      */
@@ -151,7 +180,7 @@ class LoggerInterface implements \Psr\Log\LoggerInterface
      * be logged and monitored.
      *
      * @param string $message
-     * @param array  $context
+     * @param array $context
      *
      * @return void
      */
@@ -167,7 +196,7 @@ class LoggerInterface implements \Psr\Log\LoggerInterface
      * that are not necessarily wrong.
      *
      * @param string $message
-     * @param array  $context
+     * @param array $context
      *
      * @return void
      */
@@ -180,7 +209,7 @@ class LoggerInterface implements \Psr\Log\LoggerInterface
      * Normal but significant events.
      *
      * @param string $message
-     * @param array  $context
+     * @param array $context
      *
      * @return void
      */
@@ -195,7 +224,7 @@ class LoggerInterface implements \Psr\Log\LoggerInterface
      * Example: User logs in, SQL logs.
      *
      * @param string $message
-     * @param array  $context
+     * @param array $context
      *
      * @return void
      */
@@ -208,41 +237,12 @@ class LoggerInterface implements \Psr\Log\LoggerInterface
      * Detailed debug information.
      *
      * @param string $message
-     * @param array  $context
+     * @param array $context
      *
      * @return void
      */
     public function debug($message, array $context = array())
     {
         $this->log('debug', $message, $context);
-    }
-
-    /**
-     * Logs with an arbitrary level.
-     *
-     * @param mixed  $level
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    public function log($level, $message, array $context = array())
-    {
-        $debugColour = $this->getDebugColour($level);
-
-        $backgroundColour = null;
-
-        if (is_array($debugColour)) {
-            $textColour = $debugColour[0];
-
-            if (isset($debugColour[1])) {
-                $backgroundColour = $debugColour[1];
-            }
-        } else {
-            $textColour = $debugColour;
-        }
-
-        $this->application->printLine($this->getDebugLevel($level), $message, $textColour, $backgroundColour,
-            strtoupper($level), $this->printTime());
     }
 }

@@ -11,6 +11,7 @@ use CLImax\Enum\QuestionDisplay;
 use CLImax\Enum\QuestionLayoutStyle;
 use CLImax\Enum\QuestionReturn;
 use CLImax\Enum\QuestionStyle;
+use Exception;
 use Seld\CliPrompt\CliPrompt;
 use Symfony\Component\Process\Process;
 
@@ -18,150 +19,119 @@ use Symfony\Component\Process\Process;
  * Class Question
  * @package CLImax
  */
-class Question extends Module {
-	/**
-	 * Creates a confirm prompt
-	 *
-	 * @param $question
-	 * @param null $default
-	 * @param null $options
-	 *
-	 * @return bool
-	 */
-	public function confirm( $question, $default = null, $options = null ) {
-		if ( empty( $options ) ) {
-			$options = array();
-		}
-
-		if ( $default !== null ) {
-			$options['default'] = ( $default ? 'y' : 'n' );
-		}
-
-		$possibleAnswers = array(
-			'positive' => array( true, 1, '1', 'y', 'yes', 'true' ),
-			'negative' => array( false, 0, '0', 'n', 'no', 'false' )
-		);
-
-		$answer = $this->ask( $question, array_merge( $options, array(
-			'possibleOptions'     => array_merge( $possibleAnswers['positive'], $possibleAnswers['negative'] ),
-			'caseSensitive'       => false,
-			'showPossibleOptions' => false,
-			'canBeBlank'          => false
-		) ) );
-
-		$answer = strtolower( $answer );
-
-		if ( in_array( $answer, $possibleAnswers['positive'], true ) ) {
-			return true;
-		} else {
-			if ( ! in_array( $answer, $possibleAnswers['negative'], true ) ) {
-				ob_start();
-				var_dump($answer);
-				$answer = ob_get_clean();
-
-				$this->application->fatal( sprintf('Did not understand "%s". Defaults to no.', $answer));
-			}
-
-			return false;
-		}
-	}
-
-	/**
-	 * Asks a question using a hidden prompt
-	 *
-	 * @param string $question The question to ask the CLI user
-	 * @param array $options An array of key-value pair options - the possible keys are as follows:
-	 *        array    'possibleOptions'        The possible options. If the answer to the question is not in this key (and it is not null), it will ask the question again
-	 *        bool    'showPossibleOptions'    Whether or not to show the possible options after asking the question. Eg. "Should we do it? (y/n): "
-	 *        bool    'caseSensitive'        Whether or not the answer is case sensitive. In short, if this is false, it will simply turn the answer and possible options into lowercase
-	 *        mixed    'default'                The default value that should be selected, if the user was to just press enter (if null, there is no default, and it will ask the question again if 'canBeBlank' is false)
-	 *        bool    'canBeBlank'            Whether or not the answer can be blank. If this is true, and the user doesn't answer anything, it will accept it and return nothing as a response
-	 *        int    'textColour'            The colour of the text of the question
-	 *        int    'backgroundColour'        The colour of the background colour of the text of the question
-	 *        string 'cast' What type this should be cast as
-	 *        callable 'callback' The callback to validate the value - function($answer) { return true; }
-	 *        string 'argument' If you want an argument to take presedence over the question you can type the name here - if the argument is specified the question will not be asked
-	 *
-	 * @return string The answer to the question
-	 */
-	public function hidden( $question, $options = null ) {
-		$overwriteOptions = [
-			'mask' => true
-		];
-
-		if (!empty($options)) {
-			$options = array_merge($options, $overwriteOptions);
-		} else {
-			$options = $overwriteOptions;
-		}
-
-		return $this->ask($question, $options);
-	}
-
-
-
-	/**
-	 * Asks a question.
-	 *
-	 * @param string $question The question to ask the CLI user
-	 * @param array $options An array of key-value pair options - the possible keys are as follows:
-	 *        array    'possibleOptions'        The possible options. If the answer to the question is not in this key (and it is not null), it will ask the question again
-	 *        bool    'showPossibleOptions'    Whether or not to show the possible options after asking the question. Eg. "Should we do it? (y/n): "
-	 *        bool    'caseSensitive'        Whether or not the answer is case sensitive. In short, if this is false, it will simply turn the answer and possible options into lowercase
-	 *        mixed    'default'                The default value that should be selected, if the user was to just press enter (if null, there is no default, and it will ask the question again if 'canBeBlank' is false)
-	 *        bool    'canBeBlank'            Whether or not the answer can be blank. If this is true, and the user doesn't answer anything, it will accept it and return nothing as a response
-	 *        int    'textColour'            The colour of the text of the question
-	 *        int    'backgroundColour'        The colour of the background colour of the text of the question
-	 *        string 'cast' What type this should be cast as
-	 *        callable 'callback' The callback to validate the value - function($answer) { return true; }
-	 *        string 'argument' If you want an argument to take presedence over the question you can type the name here - if the argument is specified the question will not be asked
-	 *        bool 'mask' Whether or not the answer should be hidden (masked)
-	 *
-	 * @return string The answer to the question
+class Question extends Module
+{
+    /**
+     * Creates a confirm prompt
      *
-     * @throws \Exception
-	 */
-	public function ask( $question, $options = null ) {
-		$defaultOptions = array(
-			'possibleOptions'     => null,
-			'showPossibleOptions' => false,
-			'caseSensitive'       => false,
-			'default'             => null,
-			'canBeBlank'          => false,
-			'textColour'          => null,
-			'backgroundColour'    => null,
-			'cast'                => null,
-			'callback'            => null,
-			'argument' 			 => null,
-			'argumentExists' 	=> null,
-			'mask' => false,
-		);
+     * @param $question
+     * @param null $default
+     * @param null $options
+     *
+     * @return bool
+     */
+    public function confirm($question, $default = null, $options = null)
+    {
+        if (empty($options)) {
+            $options = array();
+        }
 
-		$options = ( $options !== null ? array_merge( $defaultOptions, $options ) : $defaultOptions );
+        if ($default !== null) {
+            $options['default'] = ($default ? 'y' : 'n');
+        }
 
-		$questionFull = $question . ( $options['default'] !== null ? ' (' . $options['default'] . '): ' : ( $options['showPossibleOptions'] ? ' (' . implode( '/',
-					$options['possibleOptions'] ) . '): ' : ' ' ) );
-		$this->application->printText( DebugLevel::ALWAYS_PRINT, $questionFull, $options['textColour'],
-			$options['backgroundColour'], null, false );
+        $possibleAnswers = array(
+            'positive' => array(true, 1, '1', 'y', 'yes', 'true'),
+            'negative' => array(false, 0, '0', 'n', 'no', 'false')
+        );
 
-		if (!empty($options['argument'])) {
-			if ($value = $this->application->arguments->get($options['argument'])) {
-				$this->application->printText( DebugLevel::ALWAYS_PRINT, $value, null, null, false, false);
+        $answer = $this->ask($question, array_merge($options, array(
+            'possibleOptions' => array_merge($possibleAnswers['positive'], $possibleAnswers['negative']),
+            'caseSensitive' => false,
+            'showPossibleOptions' => false,
+            'canBeBlank' => false
+        )));
 
-				echo PHP_EOL;
+        $answer = strtolower($answer);
 
-				if (!empty($options['possibleOptions']) && !in_array($value, $options['possibleOptions'])) {
-					$this->application->fatal(sprintf('Argument %s value %s was not allowed as a valid answer', $options['argument'], $value));
+        if (in_array($answer, $possibleAnswers['positive'], true)) {
+            return true;
+        } else {
+            if (!in_array($answer, $possibleAnswers['negative'], true)) {
+                ob_start();
+                var_dump($answer);
+                $answer = ob_get_clean();
 
-					return null;
-				}
+                $this->application->fatal(sprintf('Did not understand "%s". Defaults to no.', $answer));
+            }
+
+            return false;
+        }
+    }
+
+    /**
+     * Asks a question.
+     *
+     * @param string $question The question to ask the CLI user
+     * @param array $options An array of key-value pair options - the possible keys are as follows:
+     *        array    'possibleOptions'        The possible options. If the answer to the question is not in this key (and it is not null), it will ask the question again
+     *        bool    'showPossibleOptions'    Whether or not to show the possible options after asking the question. Eg. "Should we do it? (y/n): "
+     *        bool    'caseSensitive'        Whether or not the answer is case sensitive. In short, if this is false, it will simply turn the answer and possible options into lowercase
+     *        mixed    'default'                The default value that should be selected, if the user was to just press enter (if null, there is no default, and it will ask the question again if 'canBeBlank' is false)
+     *        bool    'canBeBlank'            Whether or not the answer can be blank. If this is true, and the user doesn't answer anything, it will accept it and return nothing as a response
+     *        int    'textColour'            The colour of the text of the question
+     *        int    'backgroundColour'        The colour of the background colour of the text of the question
+     *        string 'cast' What type this should be cast as
+     *        callable 'callback' The callback to validate the value - function($answer) { return true; }
+     *        string 'argument' If you want an argument to take presedence over the question you can type the name here - if the argument is specified the question will not be asked
+     *        bool 'mask' Whether or not the answer should be hidden (masked)
+     *
+     * @return string The answer to the question
+     *
+     * @throws Exception
+     */
+    public function ask($question, $options = null)
+    {
+        $defaultOptions = array(
+            'possibleOptions' => null,
+            'showPossibleOptions' => false,
+            'caseSensitive' => false,
+            'default' => null,
+            'canBeBlank' => false,
+            'textColour' => null,
+            'backgroundColour' => null,
+            'cast' => null,
+            'callback' => null,
+            'argument' => null,
+            'argumentExists' => null,
+            'mask' => false,
+        );
+
+        $options = ($options !== null ? array_merge($defaultOptions, $options) : $defaultOptions);
+
+        $questionFull = $question . ($options['default'] !== null ? ' (' . $options['default'] . '): ' : ($options['showPossibleOptions'] ? ' (' . implode('/',
+                    $options['possibleOptions']) . '): ' : ' '));
+        $this->application->printText(DebugLevel::ALWAYS_PRINT, $questionFull, $options['textColour'],
+            $options['backgroundColour'], null, false);
+
+        if (!empty($options['argument'])) {
+            if ($value = $this->application->arguments->get($options['argument'])) {
+                $this->application->printText(DebugLevel::ALWAYS_PRINT, $value, null, null, false, false);
+
+                echo PHP_EOL;
+
+                if (!empty($options['possibleOptions']) && !in_array($value, $options['possibleOptions'])) {
+                    $this->application->fatal(sprintf('Argument %s value %s was not allowed as a valid answer', $options['argument'], $value));
+
+                    return null;
+                }
 
                 if ($value !== null && $value !== false) {
-                    if ( ! empty($options['cast'])) {
+                    if (!empty($options['cast'])) {
                         @settype($value, $options['cast']);
                     }
 
-                    if ( ! empty($options['callback'])) {
+                    if (!empty($options['callback'])) {
                         $value = call_user_func($options['callback'], $value);
 
                         if ($value === false || $value === null) {
@@ -170,367 +140,403 @@ class Question extends Module {
                     }
                 }
 
-				return $value;
-			}
-		}
+                return $value;
+            }
+        }
 
-		if (!empty($options['argumentExists'])) {
-			if ($this->application->arguments->has($options['argumentExists'])) {
-				return true;
-			}
-		}
+        if (!empty($options['argumentExists'])) {
+            if ($this->application->arguments->has($options['argumentExists'])) {
+                return true;
+            }
+        }
 
-		if ($this->application->canPrompt()) {
-			$response = null;
+        if ($this->application->canPrompt()) {
+            $response = null;
 
-			while (true) { // We'll break out during the loop
-				if ($options['mask']) {
-					$inputRead = CliPrompt::hiddenPrompt();
-				} else {
-					$inputRead = CliPrompt::prompt();
-				}
+            while (true) { // We'll break out during the loop
+                if ($options['mask']) {
+                    $inputRead = CliPrompt::hiddenPrompt();
+                } else {
+                    $inputRead = CliPrompt::prompt();
+                }
 
-				$inputRead = trim($inputRead);
+                $inputRead = trim($inputRead);
 
-				if ($inputRead == '') {
-					if ($options['default'] !== null) {
-						$response = $options['default'];
-					} else if ($options['canBeBlank']) {
-						$response = '';
-					}
-				} else {
-					if ($options['possibleOptions'] !== null) {
-						if ($options['caseSensitive']) {
-							$found = array_search($inputRead, $options['possibleOptions']);
-						} else {
-							$found = array_search(strtolower($inputRead),
-								array_map('strtolower', $options['possibleOptions']));
-						}
-						if ($found !== false) {
-							$response = $options['possibleOptions'][ $found ];
-						}
-					} else {
-						$response = $inputRead;
-					}
-				}
+                if ($inputRead == '') {
+                    if ($options['default'] !== null) {
+                        $response = $options['default'];
+                    } else if ($options['canBeBlank']) {
+                        $response = '';
+                    }
+                } else {
+                    if ($options['possibleOptions'] !== null) {
+                        if ($options['caseSensitive']) {
+                            $found = array_search($inputRead, $options['possibleOptions']);
+                        } else {
+                            $found = array_search(strtolower($inputRead),
+                                array_map('strtolower', $options['possibleOptions']));
+                        }
+                        if ($found !== false) {
+                            $response = $options['possibleOptions'][$found];
+                        }
+                    } else {
+                        $response = $inputRead;
+                    }
+                }
 
-				if ($response !== null && $response !== false) {
-					if ( ! empty($options['cast'])) {
-						@settype($response, $options['cast']);
-					}
+                if ($response !== null && $response !== false) {
+                    if (!empty($options['cast'])) {
+                        @settype($response, $options['cast']);
+                    }
 
-					if ( ! empty($options['callback'])) {
-						$response = call_user_func($options['callback'], $response);
+                    if (!empty($options['callback'])) {
+                        $response = call_user_func($options['callback'], $response);
 
-						if ($response === false || $response === null) {
-							$response = null;
-						}
-					}
-				}
+                        if ($response === false || $response === null) {
+                            $response = null;
+                        }
+                    }
+                }
 
-				if ($response !== null) {
-					break;
-				} else {
-					$this->application->printText(DebugLevel::ALWAYS_PRINT, $questionFull, $options['textColour'],
-						$options['backgroundColour'], null, false);
-				}
-			}
+                if ($response !== null) {
+                    break;
+                } else {
+                    $this->application->printText(DebugLevel::ALWAYS_PRINT, $questionFull, $options['textColour'],
+                        $options['backgroundColour'], null, false);
+                }
+            }
 
-			if ($response === null) {
-				$this->application->fatal('Could not read STDIN');
-			}
+            if ($response === null) {
+                $this->application->fatal('Could not read STDIN');
+            }
 
-			return $response;
-		} else {
-			if ( ! empty($options['default'])) {
-				return $options['default'];
-			}
+            return $response;
+        } else {
+            if (!empty($options['default'])) {
+                return $options['default'];
+            }
 
-			throw new \Exception(sprintf('Could not find "default" option and this cli does not support prompts'));
-		}
-	}
+            throw new Exception(sprintf('Could not find "default" option and this cli does not support prompts'));
+        }
+    }
 
-	/**
-	 * @param      $question
-	 * @param      $choices
-	 * @param null $options
-	 * @param bool $defaultToggleValue
-	 *
-	 * @return array
-	 * @throws \Exception
-	 */
-	public function askToggled($question, $choices, $options = null, $defaultToggleValue = true) {
-		$toggleStatus = [];
+    /**
+     * Asks a question using a hidden prompt
+     *
+     * @param string $question The question to ask the CLI user
+     * @param array $options An array of key-value pair options - the possible keys are as follows:
+     *        array    'possibleOptions'        The possible options. If the answer to the question is not in this key (and it is not null), it will ask the question again
+     *        bool    'showPossibleOptions'    Whether or not to show the possible options after asking the question. Eg. "Should we do it? (y/n): "
+     *        bool    'caseSensitive'        Whether or not the answer is case sensitive. In short, if this is false, it will simply turn the answer and possible options into lowercase
+     *        mixed    'default'                The default value that should be selected, if the user was to just press enter (if null, there is no default, and it will ask the question again if 'canBeBlank' is false)
+     *        bool    'canBeBlank'            Whether or not the answer can be blank. If this is true, and the user doesn't answer anything, it will accept it and return nothing as a response
+     *        int    'textColour'            The colour of the text of the question
+     *        int    'backgroundColour'        The colour of the background colour of the text of the question
+     *        string 'cast' What type this should be cast as
+     *        callable 'callback' The callback to validate the value - function($answer) { return true; }
+     *        string 'argument' If you want an argument to take presedence over the question you can type the name here - if the argument is specified the question will not be asked
+     *
+     * @return string The answer to the question
+     */
+    public function hidden($question, $options = null)
+    {
+        $overwriteOptions = [
+            'mask' => true
+        ];
 
-		if (is_array($defaultToggleValue)) {
-			foreach ( $choices as $key => $value ) {
-				$toggleStatus[ $key ] = isset($defaultToggleValue[$key]) ? $defaultToggleValue[$key] : false;
-			}
-		} else {
-			foreach ( $choices as $key => $value ) {
-				$toggleStatus[ $key ] = $defaultToggleValue;
-			}
-		}
+        if (!empty($options)) {
+            $options = array_merge($options, $overwriteOptions);
+        } else {
+            $options = $overwriteOptions;
+        }
 
-		$defaultOptions = [
-			'canBeBlank' => true,
-			'return' => QuestionReturn::KEY
-		];
+        return $this->ask($question, $options);
+    }
 
-		if (!empty($options)) {
-			$options = array_merge($defaultOptions, $options);
-		} else {
-			$options = $defaultOptions;
-		}
+    /**
+     * @param      $question
+     * @param      $choices
+     * @param null $options
+     * @param bool $defaultToggleValue
+     *
+     * @return array
+     * @throws Exception
+     */
+    public function askToggled($question, $choices, $options = null, $defaultToggleValue = true)
+    {
+        $toggleStatus = [];
 
-		if (isset($options['displayCallback'])) {
-			throw new \Exception('displayCallback cannot be overwritten');
-		}
-		
-		if ($this->application->isUtf8()) {
-			$tick = '✓';
-		} else {
-			$tick = 'X';
-		}
-		
-		$selectedFormat = DebugColour::buildString(DebugColour::LIGHT_GREEN)->bold()->write('[' . $tick . ']')->reset()->write(' %s')->toString();
-		$deselectedFormat = DebugColour::buildString(DebugColour::LIGHT_RED)->bold()->write('[ ]')->reset()->write(' %s')->toString();
+        if (is_array($defaultToggleValue)) {
+            foreach ($choices as $key => $value) {
+                $toggleStatus[$key] = isset($defaultToggleValue[$key]) ? $defaultToggleValue[$key] : false;
+            }
+        } else {
+            foreach ($choices as $key => $value) {
+                $toggleStatus[$key] = $defaultToggleValue;
+            }
+        }
 
-		do {
-			$answer = $this->askMultipleChoice($question, $choices, array_merge($options, [
-				'displayCallback' => function($key, $value) use ($toggleStatus, $selectedFormat, $deselectedFormat) {
-					if ($toggleStatus[$key]) {
-						return sprintf($selectedFormat, $value);
-					} else {
-						return sprintf($deselectedFormat, $value);
-					}
-				}
-			]));
+        $defaultOptions = [
+            'canBeBlank' => true,
+            'return' => QuestionReturn::KEY
+        ];
 
-			if ($answer !== null && $answer !== '') {
-				$toggleStatus[$answer] = !$toggleStatus[$answer];
+        if (!empty($options)) {
+            $options = array_merge($defaultOptions, $options);
+        } else {
+            $options = $defaultOptions;
+        }
 
-				// It's going to run again, let's clean the buffer
-				$this->application->clear->lines(count($toggleStatus) + 2)->application->scroll->up();
-			}
-		} while ($answer !== null);
+        if (isset($options['displayCallback'])) {
+            throw new Exception('displayCallback cannot be overwritten');
+        }
 
-		$toggledAnswers = [];
+        if ($this->application->isUtf8()) {
+            $tick = '✓';
+        } else {
+            $tick = 'X';
+        }
 
-		foreach ($toggleStatus as $answer => $toggled) {
-			if ($toggled) {
-				$toggledAnswers[$answer] = $choices[$answer];
-			}
-		}
+        $selectedFormat = DebugColour::buildString(DebugColour::LIGHT_GREEN)->bold()->write('[' . $tick . ']')->reset()->write(' %s')->toString();
+        $deselectedFormat = DebugColour::buildString(DebugColour::LIGHT_RED)->bold()->write('[ ]')->reset()->write(' %s')->toString();
 
-		return $toggledAnswers;
-	}
+        do {
+            $answer = $this->askMultipleChoice($question, $choices, array_merge($options, [
+                'displayCallback' => function ($key, $value) use ($toggleStatus, $selectedFormat, $deselectedFormat) {
+                    if ($toggleStatus[$key]) {
+                        return sprintf($selectedFormat, $value);
+                    } else {
+                        return sprintf($deselectedFormat, $value);
+                    }
+                }
+            ]));
 
-	/**
-	 * Asks a multiple choice question, and shows the user the possible options.
-	 *
-	 * @param string $question The question to ask the CLI user
-	 * @param array $choices The possible choices. If the answer to the question is not in this key (and it is not null), it will ask the question again
-	 * @param array $options An array of key-value pair options - the possible keys are as follows:
-	 *        int    'style'             The style from QuestionStyle (see this class for more info)
-	 *        int    'display'           The display style from QuestionDisplay (see this class for more info)
-	 *      bool    'acceptValueAnswers' Whether or not to accept the actual answers as an answer or to only accept keys (answers have first priority)
-	 *        int    'layoutStyle'         The layout style from QuestionLayoutStyle (see this class for more info)
-	 *        mixed    'default'             The default value that should be selected, if the user was to just press enter
-	 *        int    'textColour'         The colour of the text of the question
-	 *        int    'backgroundColour'   The colour of the background colour of the text of the question
-	 *        bool    'padKeys'             Whether or not to pad keys to the key with the maximum length
-	 *            Turns
-	 *                [red] Red
-	 *                [blue] Blue
-	 *            into
-	 *                [red ] Red
-	 *                [blue] Blue
-	 *        int    'padType'             The padding type if padKeys is true (anything that works with str_pad works here - eg. STR_PAD_LEFT, STR_PAD_RIGHT, STR_PAD_BOTH)
-	 *        int    'return'             The return method from QuestionReturn (see this class for more info)
-	 *        bool   'canBeBlank'         Specifies whether or not the answer may be blank
-	 *        string 'argument' If you want an argument to take presedence over the question you can type the name here - if the argument is specified the question will not be asked
-	 *
-	 * @return string The answer to the question
-	 * @throws \Exception
-	 */
-	public function askMultipleChoice( $question, $choices, $options = null ) {
-		$defaultOptions = array(
-			'style'              => QuestionStyle::NUMBERS,
-			'display'            => QuestionDisplay::VALUE,
-			'acceptValueAnswers' => true,
-			'acceptKeyAnswers' => false,
-			'layoutStyle'        => QuestionLayoutStyle::GRID,
-			'default'            => null,
-			'textColour'         => null,
-			'canBeBlank'         => false,
-			'backgroundColour'   => null,
-			'padKeys'            => true,
-			'padType'            => null,
-			'return'             => QuestionReturn::VALUE,
-			'argument' 			 => null,
-		);
+            if ($answer !== null && $answer !== '') {
+                $toggleStatus[$answer] = !$toggleStatus[$answer];
 
-		$options = ( $options !== null ? array_merge( $defaultOptions, $options ) : $defaultOptions );
+                // It's going to run again, let's clean the buffer
+                $this->application->clear->lines(count($toggleStatus) + 2)->application->scroll->up();
+            }
+        } while ($answer !== null);
 
-		$questionFull = $question;
+        $toggledAnswers = [];
 
-		if ($options['display'] === QuestionDisplay::KEY) {
-			$choices = array_keys($choices);
+        foreach ($toggleStatus as $answer => $toggled) {
+            if ($toggled) {
+                $toggledAnswers[$answer] = $choices[$answer];
+            }
+        }
 
-			$options['return'] = $options['return'] === QuestionReturn::KEY ? QuestionReturn::VALUE : QuestionReturn::KEY;
-		}
+        return $toggledAnswers;
+    }
 
-		if (!empty($options['argument'])) {
-			$options['style'] = QuestionStyle::VALUES;
-		}
+    /**
+     * Asks a multiple choice question, and shows the user the possible options.
+     *
+     * @param string $question The question to ask the CLI user
+     * @param array $choices The possible choices. If the answer to the question is not in this key (and it is not null), it will ask the question again
+     * @param array $options An array of key-value pair options - the possible keys are as follows:
+     *        int    'style'             The style from QuestionStyle (see this class for more info)
+     *        int    'display'           The display style from QuestionDisplay (see this class for more info)
+     *      bool    'acceptValueAnswers' Whether or not to accept the actual answers as an answer or to only accept keys (answers have first priority)
+     *        int    'layoutStyle'         The layout style from QuestionLayoutStyle (see this class for more info)
+     *        mixed    'default'             The default value that should be selected, if the user was to just press enter
+     *        int    'textColour'         The colour of the text of the question
+     *        int    'backgroundColour'   The colour of the background colour of the text of the question
+     *        bool    'padKeys'             Whether or not to pad keys to the key with the maximum length
+     *            Turns
+     *                [red] Red
+     *                [blue] Blue
+     *            into
+     *                [red ] Red
+     *                [blue] Blue
+     *        int    'padType'             The padding type if padKeys is true (anything that works with str_pad works here - eg. STR_PAD_LEFT, STR_PAD_RIGHT, STR_PAD_BOTH)
+     *        int    'return'             The return method from QuestionReturn (see this class for more info)
+     *        bool   'canBeBlank'         Specifies whether or not the answer may be blank
+     *        string 'argument' If you want an argument to take presedence over the question you can type the name here - if the argument is specified the question will not be asked
+     *
+     * @return string The answer to the question
+     * @throws Exception
+     */
+    public function askMultipleChoice($question, $choices, $options = null)
+    {
+        $defaultOptions = array(
+            'style' => QuestionStyle::NUMBERS,
+            'display' => QuestionDisplay::VALUE,
+            'acceptValueAnswers' => true,
+            'acceptKeyAnswers' => false,
+            'layoutStyle' => QuestionLayoutStyle::GRID,
+            'default' => null,
+            'textColour' => null,
+            'canBeBlank' => false,
+            'backgroundColour' => null,
+            'padKeys' => true,
+            'padType' => null,
+            'return' => QuestionReturn::VALUE,
+            'argument' => null,
+        );
 
-		$choiceIndex    = array();
-		$choiceIndexKey = array();
+        $options = ($options !== null ? array_merge($defaultOptions, $options) : $defaultOptions);
 
-		if ( $options['style'] === QuestionStyle::NUMBERS || $options['style'] === QuestionStyle::NUMBERS_ACCEPT_KEYS ) {
-			$i = 1;
+        $questionFull = $question;
 
-			foreach ( $choices as $key => $choice ) {
-				$index                    = ( $i ++ );
-				$choiceIndex[ $index ]    = $choice;
-				$choiceIndexKey[ $index ] = $key;
-			}
+        if ($options['display'] === QuestionDisplay::KEY) {
+            $choices = array_keys($choices);
 
-			$i = 1;
+            $options['return'] = $options['return'] === QuestionReturn::KEY ? QuestionReturn::VALUE : QuestionReturn::KEY;
+        }
 
-			foreach ( $choices as $key => $choice ) {
-				$index = ( $i ++ );
-				if ( $options['default'] !== null && $options['default'] === $key ) {
-					$options['default'] = $index;
+        if (!empty($options['argument'])) {
+            $options['style'] = QuestionStyle::VALUES;
+        }
 
-					break;
-				}
-			}
+        $choiceIndex = array();
+        $choiceIndexKey = array();
 
-		} else if ( $options['style'] === QuestionStyle::KEYS ) {
-			foreach ( $choices as $key => $choice ) {
-				$choiceIndex[ $key ] = $choice;
-			}
-		} else if ($options['style'] === QuestionStyle::VALUES) {
-			foreach ( $choices as $key => $choice ) {
-				$choiceIndex[ $choice ] = $choice;
-			}
-		}
+        if ($options['style'] === QuestionStyle::NUMBERS || $options['style'] === QuestionStyle::NUMBERS_ACCEPT_KEYS) {
+            $i = 1;
 
-		$optionColourCode  = DebugColour::getColourCode( DebugColour::GREEN );
-		$regularColourCode = DebugColour::getColourCode( $options['textColour'], $options['backgroundColour'] );
+            foreach ($choices as $key => $choice) {
+                $index = ($i++);
+                $choiceIndex[$index] = $choice;
+                $choiceIndexKey[$index] = $key;
+            }
 
-		$hasDisplayCallback = false;
+            $i = 1;
 
-		$choiceIndexDisplay = [];
+            foreach ($choices as $key => $choice) {
+                $index = ($i++);
+                if ($options['default'] !== null && $options['default'] === $key) {
+                    $options['default'] = $index;
 
-		if (!empty($options['displayCallback'])) {
-			if (!is_callable($options['displayCallback'])) {
-				throw new \Exception(sprintf('displayCallback was not a callable'));
-			}
+                    break;
+                }
+            }
 
-			foreach ($choiceIndex as $key => $value) {
-				$choiceIndexDisplay[$key] = call_user_func($options['displayCallback'], $choiceIndexKey[$key], $value);
-			}
+        } else if ($options['style'] === QuestionStyle::KEYS) {
+            foreach ($choices as $key => $choice) {
+                $choiceIndex[$key] = $choice;
+            }
+        } else if ($options['style'] === QuestionStyle::VALUES) {
+            foreach ($choices as $key => $choice) {
+                $choiceIndex[$choice] = $choice;
+            }
+        }
 
-			$hasDisplayCallback = true;
-		} else {
-			$choiceIndexDisplay = $choiceIndex; // Do nothing with it
-		}
+        $optionColourCode = DebugColour::getColourCode(DebugColour::GREEN);
+        $regularColourCode = DebugColour::getColourCode($options['textColour'], $options['backgroundColour']);
 
-		if ($options['style'] === QuestionStyle::VALUES) {
-			foreach ( $choiceIndexDisplay as $key => $choice ) {
-				if ($hasDisplayCallback) {
-					$choice = call_user_func($options['displayCallback'], $choiceIndexKey[$key], $choice);
-				}
+        $hasDisplayCallback = false;
 
-				$questionFull .= "\n" . $optionColourCode . ' * ' . $regularColourCode . $choice;
-			}
+        $choiceIndexDisplay = [];
 
-			$questionFull .= "\n " . $optionColourCode . '>';
-		} else {
-			if ( $options['padKeys'] ) {
-				if ( $options['padType'] === null ) {
-					if ( $options['style'] === QuestionStyle::NUMBERS ) {
-						$options['padType'] = STR_PAD_LEFT;
-					} else {
-						$options['padType'] = STR_PAD_RIGHT;
-					}
-				}
+        if (!empty($options['displayCallback'])) {
+            if (!is_callable($options['displayCallback'])) {
+                throw new Exception(sprintf('displayCallback was not a callable'));
+            }
 
-				$maxKeyLength = 0;
+            foreach ($choiceIndex as $key => $value) {
+                $choiceIndexDisplay[$key] = call_user_func($options['displayCallback'], $choiceIndexKey[$key], $value);
+            }
 
-				foreach ( $choiceIndexDisplay as $key => $choice ) {
-					$maxKeyLength = max( $maxKeyLength, strlen( $key ) );
-				}
+            $hasDisplayCallback = true;
+        } else {
+            $choiceIndexDisplay = $choiceIndex; // Do nothing with it
+        }
 
-				foreach ( $choiceIndexDisplay as $key => $choice ) {
-					$questionFull .= "\n" . $optionColourCode . '[' . str_pad( $key, $maxKeyLength, ' ',
-							$options['padType'] ) . '] ' . $regularColourCode . $choice;
-				}
+        if ($options['style'] === QuestionStyle::VALUES) {
+            foreach ($choiceIndexDisplay as $key => $choice) {
+                if ($hasDisplayCallback) {
+                    $choice = call_user_func($options['displayCallback'], $choiceIndexKey[$key], $choice);
+                }
 
-				$questionFull .= str_pad( "\n ", $maxKeyLength + 2, ' ' ) . $optionColourCode . '>';
-			} else {
-				foreach ( $choiceIndexDisplay as $key => $choice ) {
-					if ($hasDisplayCallback) {
-						$choice = call_user_func($options['displayCallback'], $choiceIndexKey[$key], $choice);
-					}
+                $questionFull .= "\n" . $optionColourCode . ' * ' . $regularColourCode . $choice;
+            }
 
-					$questionFull .= "\n" . $optionColourCode . '[' . $key . '] ' . $regularColourCode . $choice;
-				}
-				$questionFull .= "\n " . $optionColourCode . '> ';
-			}
-		}
+            $questionFull .= "\n " . $optionColourCode . '>';
+        } else {
+            if ($options['padKeys']) {
+                if ($options['padType'] === null) {
+                    if ($options['style'] === QuestionStyle::NUMBERS) {
+                        $options['padType'] = STR_PAD_LEFT;
+                    } else {
+                        $options['padType'] = STR_PAD_RIGHT;
+                    }
+                }
 
-		$possibleOptions = array_keys( $choiceIndex );
+                $maxKeyLength = 0;
 
-		if ( $options['acceptValueAnswers'] ) {
-			foreach ( $choices as $choice ) {
-				$choiceIndexKey[ $choice ] = $choice;
-				$choiceIndex[ $choice ]    = $choice;
-			}
-		}
+                foreach ($choiceIndexDisplay as $key => $choice) {
+                    $maxKeyLength = max($maxKeyLength, strlen($key));
+                }
 
-		if ( $options['acceptKeyAnswers'] ) {
-			foreach ( $choices as $key => $choice ) {
-				$choiceIndexKey[ $key ] = $choice;
-				$choiceIndex[ $key ]    = $choice;
-			}
-		}
+                foreach ($choiceIndexDisplay as $key => $choice) {
+                    $questionFull .= "\n" . $optionColourCode . '[' . str_pad($key, $maxKeyLength, ' ',
+                            $options['padType']) . '] ' . $regularColourCode . $choice;
+                }
 
-		$answer = $this->ask( $questionFull, array(
-			'default'          => $options['default'],
-			'canBeBlank'       => $options['canBeBlank'],
-			'textColour'       => $options['textColour'],
-			'backgroundColour' => $options['backgroundColour'],
-			'possibleOptions'  => $possibleOptions,
-			'argument' => $options['argument'],
-		) );
+                $questionFull .= str_pad("\n ", $maxKeyLength + 2, ' ') . $optionColourCode . '>';
+            } else {
+                foreach ($choiceIndexDisplay as $key => $choice) {
+                    if ($hasDisplayCallback) {
+                        $choice = call_user_func($options['displayCallback'], $choiceIndexKey[$key], $choice);
+                    }
 
-		if (empty($answer) && $options['canBeBlank']) {
-			return null;
-		}
+                    $questionFull .= "\n" . $optionColourCode . '[' . $key . '] ' . $regularColourCode . $choice;
+                }
+                $questionFull .= "\n " . $optionColourCode . '> ';
+            }
+        }
 
-		if ( $options['return'] === QuestionReturn::KEY ) {
-			if ( $options['style'] === QuestionStyle::NUMBERS ) {
-				return $choiceIndexKey[ $answer ];
-			} else {
-				return $answer;
-			}
-		} else {
-			return $choiceIndex[ $answer ];
-		}
-	}
+        $possibleOptions = array_keys($choiceIndex);
 
-	/**
-	 * @param string $message
-	 */
-	public function pressToContinue( $message = 'Press ENTER to continue' ) {
-		$this->ask( $message, array(
-			'caseSensitive'       => false,
-			'showPossibleOptions' => false,
-			'canBeBlank'          => true
-		) );
-	}
+        if ($options['acceptValueAnswers']) {
+            foreach ($choices as $choice) {
+                $choiceIndexKey[$choice] = $choice;
+                $choiceIndex[$choice] = $choice;
+            }
+        }
+
+        if ($options['acceptKeyAnswers']) {
+            foreach ($choices as $key => $choice) {
+                $choiceIndexKey[$key] = $choice;
+                $choiceIndex[$key] = $choice;
+            }
+        }
+
+        $answer = $this->ask($questionFull, array(
+            'default' => $options['default'],
+            'canBeBlank' => $options['canBeBlank'],
+            'textColour' => $options['textColour'],
+            'backgroundColour' => $options['backgroundColour'],
+            'possibleOptions' => $possibleOptions,
+            'argument' => $options['argument'],
+        ));
+
+        if (empty($answer) && $options['canBeBlank']) {
+            return null;
+        }
+
+        if ($options['return'] === QuestionReturn::KEY) {
+            if ($options['style'] === QuestionStyle::NUMBERS) {
+                return $choiceIndexKey[$answer];
+            } else {
+                return $answer;
+            }
+        } else {
+            return $choiceIndex[$answer];
+        }
+    }
+
+    /**
+     * @param string $message
+     */
+    public function pressToContinue($message = 'Press ENTER to continue')
+    {
+        $this->ask($message, array(
+            'caseSensitive' => false,
+            'showPossibleOptions' => false,
+            'canBeBlank' => true
+        ));
+    }
 }

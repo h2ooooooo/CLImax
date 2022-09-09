@@ -14,53 +14,59 @@ use CLImax\Enum\ClearInLineType;
  * Class Clear
  * @package CLImax
  */
-class Clear extends Module {
-	/**
-	 * Clears the last line and moves the cursor to the start of the line (for use in redrawing lines, such as progress)
-	 */
-	public function lastLine() {
-		$this->line()->application->cursor->previousLine();
-	}
-
-	/**
-	 * @return \CLImax\Clear
+class Clear extends Module
+{
+    /**
+     * Clears the last line and moves the cursor to the start of the line (for use in redrawing lines, such as progress)
      */
-	public function everything() {
-		return $this->display(ClearDisplayType::ENTIRE_SCREEN);
-	}
+    public function lastLine()
+    {
+        $this->line()->application->cursor->previousLine();
+    }
 
-	/**
-	 * @param int $type
-	 *
-	 * @return $this
+    /**
+     * @param int $type
+     *
+     * @return $this
      */
-    public function display($type = ClearDisplayType::FROM_CURSOR_TO_END) {
-		return $this->printAnsiCode(sprintf('%dJ', $type));
-	}
+    public function line($type = ClearInLineType::FROM_CURSOR_TO_END)
+    {
+        return $this->printAnsiCode(sprintf('%dK', $type));
+    }
 
-	/**
-	 * @param int $type
-	 *
-	 * @return $this
+    /**
+     * @return Clear
      */
-    public function line($type = ClearInLineType::FROM_CURSOR_TO_END) {
-		return $this->printAnsiCode(sprintf('%dK', $type));
-	}
+    public function everything()
+    {
+        return $this->display(ClearDisplayType::ENTIRE_SCREEN);
+    }
 
-	/**
-	 * @param $lines
-	 *
-	 * @return $this
+    /**
+     * @param int $type
+     *
+     * @return $this
      */
-    public function lines($lines) {
-		$cursor = $this->application->cursor;
+    public function display($type = ClearDisplayType::FROM_CURSOR_TO_END)
+    {
+        return $this->printAnsiCode(sprintf('%dJ', $type));
+    }
 
-		for ($i = 0; $i < $lines; $i++) {
-			$this->line(ClearInLineType::ENTIRE_LINE);
+    /**
+     * @param $lines
+     *
+     * @return $this
+     */
+    public function lines($lines)
+    {
+        $cursor = $this->application->cursor;
 
-			$cursor->previousLine();
-		}
+        for ($i = 0; $i < $lines; $i++) {
+            $this->line(ClearInLineType::ENTIRE_LINE);
 
-		return $this;
-	}
+            $cursor->previousLine();
+        }
+
+        return $this;
+    }
 }
