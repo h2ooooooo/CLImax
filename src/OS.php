@@ -27,6 +27,8 @@ class OS extends Module {
 				$this->os = 'windows';
 			} else if ( preg_match( '/^Linux/i', $this->osUname ) ) {
 				$this->os = 'linux';
+            } else if ( preg_match( '/^Darwin/i', $this->osUname ) ) {
+                $this->os = 'darwin'; // MacOS
 			} else {
 				throw new \Exception( sprintf( 'Could not parse uname "%s"', $this->osUname ) );
 			}
@@ -43,6 +45,14 @@ class OS extends Module {
 		return $this->getOS() === 'windows';
 	}
 
+    /**
+     * @return bool
+     * @throws \Exception
+     */
+    public function isUnix() {
+        return $this->isLinux() || $this->isDarwin();
+    }
+
 	/**
 	 * @return bool
 	 * @throws \Exception
@@ -50,4 +60,12 @@ class OS extends Module {
 	public function isLinux() {
 		return $this->getOS() === 'linux';
 	}
+
+    /**
+     * @return bool
+     * @throws \Exception
+     */
+    public function isDarwin() {
+        return $this->getOS() === 'darwin';
+    }
 }
