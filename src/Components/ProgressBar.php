@@ -8,11 +8,9 @@
 
 namespace CLImax\Components;
 
-use CLImax\Application;
 use CLImax\DebugLevel;
 
-class ProgressBar
-{
+class ProgressBar {
     protected $application;
 
     protected $current = 0;
@@ -26,7 +24,7 @@ class ProgressBar
     /** @var ProgressBar */
     protected $subProgressBar;
 
-    /** @var ProgressBar */
+    /** @var ProgressBar  */
     protected $parentProgressBar;
 
     protected $previouslyOutput = false;
@@ -34,8 +32,17 @@ class ProgressBar
     protected $disposed = false;
     protected $debugLevel = DebugLevel::ALWAYS_PRINT;
 
-    public function __construct(Application $application, $total, $textColour = null, $backgroundColour = null, $start = 0, $message = null, $parentProgressBar = null)
-    {
+    public function dispose() {
+        $this->reset();
+
+        $this->disposed = true;
+    }
+
+    public function isDisposed() {
+        return $this->disposed;
+    }
+
+    public function __construct(\CLImax\Application $application, $total, $textColour = null, $backgroundColour = null, $start = 0, $message = null, $parentProgressBar = null) {
         $this->application = $application;
         $this->total = $total;
         $this->textColour = $textColour;
@@ -45,20 +52,7 @@ class ProgressBar
         $this->parentProgressBar = $parentProgressBar;
     }
 
-    public function dispose()
-    {
-        $this->reset();
-
-        $this->disposed = true;
-    }
-
-    public function reset()
-    {
-        $this->application->clear->lastLine();
-    }
-
-    public function setMessage($message, $draw = true)
-    {
+    public function setMessage($message, $draw = true) {
         $this->message = $message;
 
         if ($draw) {
@@ -70,8 +64,31 @@ class ProgressBar
         }
     }
 
-    public function draw()
-    {
+    public function setCurrent($current, $draw = true) {
+        $this->current = $current;
+
+        if ($draw) {
+            if ($this->parentProgressBar) {
+                $this->parentProgressBar->draw();
+            } else {
+                $this->draw();
+            }
+        }
+    }
+
+    protected function getSubProgressBar() {
+        if (!empty($this->subProgressBar)) {
+            if (!$this->subProgressBar->isDisposed()) {
+                return $this->subProgressBar;
+            } else {
+                $this->subProgressBar = null;
+            }
+        }
+
+        return null;
+    }
+
+    public function draw() {
         if ($this->previouslyOutput) {
             $this->reset();
         }
@@ -96,20 +113,30 @@ class ProgressBar
         }
     }
 
-    public function getProgressString()
-    {
+    public function reset() {
+        $this->application->clear->lastLine();
+    }
+
+    public function getProgressString($progressBarLength = 50, $showCurrentAndTotal = true, $showPercent = true) {
         $fraction = $this->current / $this->total;
         $currentFormatted = number_format($this->current, 2);
         $totalFormatted = number_format($this->total, 2);
         $percentFormatted = number_format($fraction * 100, 2);
 
+        $messageParts = [];
+
         if (!empty($this->message)) {
-            $message = sprintf('%s | %d / %d (%s%%)', $this->message, $currentFormatted, $totalFormatted, $percentFormatted);
-        } else {
-            $message = sprintf('%d / %d (%s%%)', $currentFormatted, $totalFormatted, $percentFormatted);
+            $messageParts[] = $this->message;
         }
 
-        $progressBarLength = 50;
+        if ($showCurrentAndTotal) {
+            $messageParts[] = sprintf('%d / %d', $currentFormatted, $totalFormatted);
+        }
+
+        if ($showPercent) {
+            $messageParts[] = sprintf('(%s%%)', $percentFormatted);
+        }
+
         $progressBarCurrent = floor($progressBarLength * $fraction);
         $progressBarString = '';
 
@@ -124,42 +151,10 @@ class ProgressBar
             $progressBarString .= $incompleteChar;
         }
 
-        return $progressBarString . ' | ' . $message;
+        return $progressBarString . (!empty($messageParts) ? ' | ' . implode(' | ', $messageParts) : '');
     }
 
-    protected function getSubProgressBar()
-    {
-        if (!empty($this->subProgressBar)) {
-            if (!$this->subProgressBar->isDisposed()) {
-                return $this->subProgressBar;
-            } else {
-                $this->subProgressBar = null;
-            }
-        }
-
-        return null;
-    }
-
-    public function isDisposed()
-    {
-        return $this->disposed;
-    }
-
-    public function setCurrent($current, $draw = true)
-    {
-        $this->current = $current;
-
-        if ($draw) {
-            if ($this->parentProgressBar) {
-                $this->parentProgressBar->draw();
-            } else {
-                $this->draw();
-            }
-        }
-    }
-
-    public function createSubProgressBar($total, $textColour = null, $backgroundColour = null, $start = 0, $message = null)
-    {
+    public function createSubProgressBar($total, $textColour = null, $backgroundColour = null, $start = 0, $message = null) {
         if (empty($textColour)) {
             $textColour = $this->textColour;
         }
