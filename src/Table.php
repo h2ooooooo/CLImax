@@ -560,7 +560,7 @@ class Table extends Module {
 
         $string = self::removeAnsiCodes($string);
 
-        return strlen($string);
+        return mb_strlen($string, 'UTF-8');
     }
 
     /**
@@ -613,7 +613,7 @@ class Table extends Module {
     ) {
         $output = $this->toString();
 
-        $this->application->printText($debugLevel, utf8_encode($output), $colour, $backgroundColour, null,
+        $this->application->printText($debugLevel, $output, $colour, $backgroundColour, null,
             false);
 
         return $this;
