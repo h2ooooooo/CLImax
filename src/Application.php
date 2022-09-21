@@ -7,7 +7,6 @@
 
 namespace CLImax;
 
-use;
 use CLImax\Enum\Spinner;
 use CLImax\Environments\Environment;
 use CLImax\Environments\Production;
