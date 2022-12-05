@@ -8,180 +8,183 @@
 namespace CLImax;
 
 use CLImax\Enum\SizeType;
-use Exception;
 
 /**
  * A simple object that contains the rows and the columns of the CLI prompt
  */
-class Size extends Module
-{
-    /**
-     * int $rows The number of characters that are space for horizontally in the CLI prompt
-     */
-    public $rows = null;
+class Size extends Module {
+	/**
+	 * int $rows The number of characters that are space for horizontally in the CLI prompt
+	 */
+	public $rows = null;
 
-    /**
-     * int $columns The number of characters that are space for vertically in the CLI prompt
-     */
-    public $columns = null;
+	/**
+	 * int $columns The number of characters that are space for vertically in the CLI prompt
+	 */
+	public $columns = null;
 
-    /**
-     * int $lastUpdate The time in microseconds that the columns and rows were last updated
-     */
-    public $lastUpdate = null;
-    public $staticSize = false;
-    private $windowsSize = [];
-    private $windowsSizeCacheSeed;
+	/**
+	 * int $lastUpdate The time in microseconds that the columns and rows were last updated
+	 */
+	public $lastUpdate = null;
 
-    /**
-     * Runs the internal Update function, that checks the size
-     * of the CLI prompt. See \CLImax\ApplicationSize->Update().
-     *
-     * @param Application $application A reference to the \CLImax\Application whereas this is related to
-     */
-    public function __construct(&$application)
-    {
-        parent::__construct($application);
+	private $windowsSize = [];
+	private $windowsSizeCacheSeed;
 
-        $this->update();
-    }
+	public $staticSize = false;
 
-    /**
-     * Runs the tput command with "lines" and "cols" as arguments,
-     * as it'll return the rows and columns of the CLI prompt.
-     * If it fails, rows and columns will remain the assumed default;
-     * Rows: \CLImax\Application_Default->sizeRows, Columns: \CLImax\Application_Default->sizeColumns
-     *
-     * @param int $whatToUpdate Whether to update rows, columns or both (from \CLImax\Application_Size_Type)
-     */
-    public function update($whatToUpdate = SizeType::BOTH)
-    {
-        if ($this->staticSize) {
-            return;
-        }
+	/**
+	 * Runs the internal Update function, that checks the size
+	 * of the CLI prompt. See \CLImax\ApplicationSize->Update().
+	 *
+	 * @param \CLImax\Application $application A reference to the \CLImax\Application whereas this is related to
+	 */
+	public function __construct( &$application ) {
+		parent::__construct( $application );
 
-        $cacheSeed = microtime(true);
+		$this->update();
+	}
 
-        if ($whatToUpdate & SizeType::ROWS) {
-            if ($this->application->os->isWindows()) {
-                $rowsRaw = $this->getWindowsSize('height', $cacheSeed); // TODO: Get real rows
-            } else {
-                $rowsRaw = $this->getCommandOutput('tput lines');
-            }
+	public function setStaticSize($rows, $columns) {
+		if (!empty($rows) && !empty($columns)) {
+			$this->staticSize = true;
 
-            if (!empty($rowsRaw)) {
-                $rowsRaw = (int)$rowsRaw;
+			$this->rows = $rows;
+			$this->columns = $columns;
+		} else {
+			$this->staticSize = false;
 
-                if (empty($rowsRaw)) {
-                    $rowsRaw = null;
-                }
-            }
+			$this->rows = null;
+			$this->columns = null;
+		}
 
-            $this->rows = !empty($rowsRaw) ? (int)$rowsRaw : $this->application->environment->sizeRows;
-        }
+		return $this;
+	}
 
-        if ($whatToUpdate & SizeType::COLUMNS) {
-            if ($this->application->os->isWindows()) {
-                $columnsRaw = $this->getWindowsSize('width', $cacheSeed); // TODO: Get real columns
-            } else {
-                $columnsRaw = $this->getCommandOutput('tput cols');
-            }
+	/**
+	 * Checks whether or not we should update the lines and columns
+	 *
+	 * @param int $whatToUpdate
+	 */
+	public function checkUpdate( $whatToUpdate = SizeType::BOTH ) {
+		if ($this->staticSize) {
+			return;
+		}
 
-            if (!empty($columnsRaw)) {
-                $columnsRaw = (int)$columnsRaw;
+		if ( microtime( true ) - $this->lastUpdate > $this->application->environment->sizeUpdateInterval ) {
+			$this->update( $whatToUpdate );
+		}
+	}
 
-                if (empty($columnsRaw)) {
-                    $columnsRaw = null;
-                }
-            }
+	/**
+	 * Runs the tput command with "lines" and "cols" as arguments,
+	 * as it'll return the rows and columns of the CLI prompt.
+	 * If it fails, rows and columns will remain the assumed default;
+	 * Rows: \CLImax\Application_Default->sizeRows, Columns: \CLImax\Application_Default->sizeColumns
+	 *
+	 * @param int $whatToUpdate Whether to update rows, columns or both (from \CLImax\Application_Size_Type)
+	 */
+	public function update( $whatToUpdate = SizeType::BOTH ) {
+		if ($this->staticSize) {
+			return;
+		}
 
-            $this->columns = !empty($columnsRaw) ? (int)$columnsRaw : $this->application->environment->sizeColumns;
-        }
+		$cacheSeed = microtime(true);
 
-        $this->lastUpdate = microtime(true);
-    }
+		if ( $whatToUpdate & SizeType::ROWS ) {
+			if ( $this->application->os->isWindows() ) {
+				$rowsRaw = $this->getWindowsSize('height', $cacheSeed); // TODO: Get real rows
+			} else {
+				$rowsRaw = $this->getCommandOutput('tput lines');
+			}
 
-    /**
-     * @param $property
-     * @param $cacheSeed
-     *
-     * @return null
-     */
-    public function getWindowsSize($property, $cacheSeed)
-    {
-        if ($this->windowsSizeCacheSeed !== $cacheSeed) {
-            $this->windowsSizeCacheSeed = $cacheSeed;
+			if (!empty($rowsRaw)) {
+				$rowsRaw = (int)$rowsRaw;
 
-            $modeOutput = $this->getCommandOutput('mode');
+				if (empty($rowsRaw)) {
+					$rowsRaw = null;
+				}
+			}
 
-            if (!empty($modeOutput)) {
-                $modeOutput = implode(PHP_EOL, $modeOutput);
+			$this->rows = ! empty( $rowsRaw ) ? (int) $rowsRaw : $this->application->environment->sizeRows;
+		}
 
-                if (preg_match_all('~^\s*(Lines|Columns):\s*(\d+)\s*$~mi', $modeOutput, $matches)) {
-                    for ($i = 0, $len = count($matches[0]); $i < $len; $i++) {
-                        $key = $matches[1][$i];
-                        $value = $matches[2][$i];
-                        if ($matches[1][$i] === 'Lines') {
-                            $property = 'height';
-                        } else if ($matches[1][$i] === 'Columns') {
-                            $property = 'width';
-                        }
+		if ( $whatToUpdate & SizeType::COLUMNS ) {
+			if ( $this->application->os->isWindows() ) {
+				$columnsRaw = $this->getWindowsSize('width', $cacheSeed); // TODO: Get real columns
+			} else {
+				$columnsRaw = $this->getCommandOutput('tput cols');
+			}
 
-                        $this->windowsSize[$property] = (int)$matches[2][$i];
-                    }
-                }
-            }
-        }
+			if (!empty($columnsRaw)) {
+				$columnsRaw = (int)$columnsRaw;
 
-        if (!isset($this->windowsSize[$property])) {
-            return null;
-        }
+				if (empty($columnsRaw)) {
+					$columnsRaw = null;
+				}
+			}
 
-        return $this->windowsSize[$property];
+			$this->columns = ! empty( $columnsRaw ) ? (int) $columnsRaw : $this->application->environment->sizeColumns;
+		}
 
-    }
+		$this->lastUpdate = microtime( true );
+	}
 
-    private function getCommandOutput($command)
-    {
-        try {
-            @exec($command, $output);
-        } catch (Exception $e) {
-            $output = null;
-        }
+	private function getCommandOutput($command) {
+		try {
+			if (php_sapi_name() !== 'cli') {
+				throw new \Exception(sprintf('running in non CLI context'));
+			}
 
-        return $output;
-    }
+			if (!function_exists('\exec')) {
+				// Some installations have this disabled for security reasons
+				throw new \Exception(sprintf('exec method does not exist'));
+			}
 
-    public function setStaticSize($rows, $columns)
-    {
-        if (!empty($rows) && !empty($columns)) {
-            $this->staticSize = true;
+			@exec($command, $output);
+		} catch (\Exception $e) {
+			$output = null;
+		}
 
-            $this->rows = $rows;
-            $this->columns = $columns;
-        } else {
-            $this->staticSize = false;
+		return $output;
+	}
 
-            $this->rows = null;
-            $this->columns = null;
-        }
+	/**
+	 * @param $property
+	 * @param $cacheSeed
+	 *
+	 * @return null
+	 */
+	public function getWindowsSize($property, $cacheSeed) {
+		if ($this->windowsSizeCacheSeed !== $cacheSeed) {
+			$this->windowsSizeCacheSeed = $cacheSeed;
 
-        return $this;
-    }
+			$modeOutput = $this->getCommandOutput('mode');
 
-    /**
-     * Checks whether or not we should update the lines and columns
-     *
-     * @param int $whatToUpdate
-     */
-    public function checkUpdate($whatToUpdate = SizeType::BOTH)
-    {
-        if ($this->staticSize) {
-            return;
-        }
+			if (!empty($modeOutput)) {
+				$modeOutput = implode(PHP_EOL, $modeOutput);
 
-        if (microtime(true) - $this->lastUpdate > $this->application->environment->sizeUpdateInterval) {
-            $this->update($whatToUpdate);
-        }
-    }
+				if (preg_match_all('~^\s*(Lines|Columns):\s*(\d+)\s*$~mi', $modeOutput, $matches)) {
+					for ($i = 0, $len = count($matches[0]); $i < $len; $i++) {
+						$key   = $matches[1][ $i ];
+						$value = $matches[2][ $i ];
+						if ($matches[1][ $i ] === 'Lines') {
+							$property = 'height';
+						} else if ($matches[1][ $i ] === 'Columns') {
+							$property = 'width';
+						}
+
+						$this->windowsSize[ $property ] = (int) $matches[2][ $i ];
+					}
+				}
+			}
+		}
+
+		if (!isset($this->windowsSize[$property])) {
+			return null;
+		}
+
+		return $this->windowsSize[$property];
+
+	}
 }
