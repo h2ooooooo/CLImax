@@ -29,6 +29,7 @@ use ReflectionClass;
  *           STDOUT and STDERR
  * @property Cursor $cursor           A cursor object to manipulate the cursor position
  * @property Scroll $scroll           A scroll object to manipulate the scroll bar position
+ * @property ProgressMessage $progressMessage           A ProgressMessage object to print single line progress messages ("Computing.. Success")
  * @property ComponentFactory $componentFactory A scroll object to manipulate the scroll bar position
  */
 abstract class Application
@@ -134,6 +135,10 @@ abstract class Application
          * string 'scroll' A scroll object to manipulate the scroll bar position
          */
         'scroll' => 'Scroll',
+	    /**
+	     * string 'progressMessage' A ProgressMessage object to print single line progress messages ("Computing.. Success")
+	     */
+        'progressMessage' => 'ProgressMessage',
         /**
          * string 'componentFactory' A factory class to create components
          */

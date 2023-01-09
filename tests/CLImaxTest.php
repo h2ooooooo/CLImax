@@ -9,6 +9,7 @@
 namespace CLImax\Tests;
 
 use CLImax\Application;
+use CLImax\ApplicationUtf8;
 
 require_once(dirname(__FILE__) . '/../vendor/autoload.php');
 
@@ -16,9 +17,9 @@ require_once(dirname(__FILE__) . '/../vendor/autoload.php');
  * Class CLImaxTestApplication
  * @package CLImax\Tests
  */
-class CLImaxTestApplication extends Application {
+class CLImaxTestApplication extends ApplicationUtf8 {
     public function init() {
-    	$this->attachWebinterface();
+    	$this->attachWebInterface();
 
     	$this->verbose('verbose');
 	    $this->debug('debug');
@@ -26,6 +27,22 @@ class CLImaxTestApplication extends Application {
 	    $this->success('success');
 	    $this->warning('warning');
 	    $this->error('error');
+
+		$progressMessage = $this->progressMessage->verbose('Computing..');
+		usleep(1000000);
+		$progressMessage->success();
+
+	    $progressMessage = $this->progressMessage->verbose('Computing..');
+	    usleep(1000000);
+	    $progressMessage->success('Successfully computed for 1 second');
+
+	    $progressMessage = $this->progressMessage->verbose('Computing..');
+	    usleep(1000000);
+	    $progressMessage->error();
+
+	    $progressMessage = $this->progressMessage->verbose('Computing..');
+	    usleep(1000000);
+	    $progressMessage->error('Could not compute');
 
 	    $answer = $this->question->ask('What is your answer?', [
 		    'default' => 'nothing',
@@ -40,7 +57,7 @@ class CLImaxTestApplication extends Application {
 	    $this->verbose(sprintf('Your answer was: %s', $answer));
     }
 
-    public function attachWebinterface() {
+    public function attachWebInterface() {
 
     }
 }
