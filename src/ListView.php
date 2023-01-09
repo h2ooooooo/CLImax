@@ -57,6 +57,8 @@ class ListView extends Module
     {
         $text = $this->getPrint();
 
+	    $this->application->checkScheduledNewline();
+
         return $this->application->printText($debugLevel, $text, $colour, $backgroundColour);
     }
 

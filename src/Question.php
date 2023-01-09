@@ -111,12 +111,15 @@ class Question extends Module
 
         $questionFull = $question . ($options['default'] !== null ? ' (' . $options['default'] . '): ' : ($options['showPossibleOptions'] ? ' (' . implode('/',
                     $options['possibleOptions']) . '): ' : ' '));
+
+	    $this->application->checkScheduledNewline();
+
         $this->application->printText(DebugLevel::ALWAYS_PRINT, $questionFull, $options['textColour'],
             $options['backgroundColour'], null, false);
 
         if (!empty($options['argument'])) {
             if ($value = $this->application->arguments->get($options['argument'])) {
-                $this->application->printText(DebugLevel::ALWAYS_PRINT, $value, null, null, false, false);
+	            $this->application->printText(DebugLevel::ALWAYS_PRINT, $value, null, null, false, false);
 
                 echo PHP_EOL;
 

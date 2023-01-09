@@ -28,21 +28,7 @@ class CLImaxTestApplication extends ApplicationUtf8 {
 	    $this->warning('warning');
 	    $this->error('error');
 
-		$progressMessage = $this->progressMessage->verbose('Computing..');
-		usleep(1000000);
-		$progressMessage->success();
-
-	    $progressMessage = $this->progressMessage->verbose('Computing..');
-	    usleep(1000000);
-	    $progressMessage->success('Successfully computed for 1 second');
-
-	    $progressMessage = $this->progressMessage->verbose('Computing..');
-	    usleep(1000000);
-	    $progressMessage->error();
-
-	    $progressMessage = $this->progressMessage->verbose('Computing..');
-	    usleep(1000000);
-	    $progressMessage->error('Could not compute');
+		$this->testProgressMessages();
 
 	    $answer = $this->question->ask('What is your answer?', [
 		    'default' => 'nothing',
@@ -60,6 +46,40 @@ class CLImaxTestApplication extends ApplicationUtf8 {
     public function attachWebInterface() {
 
     }
+
+	private function testProgressMessages() {
+		// Success
+		$progressMessage = $this->progressMessage->verbose('Computing..');
+		usleep(1000000);
+		$progressMessage->success();
+
+		$progressMessage = $this->progressMessage->verbose('Computing..');
+		usleep(1000000);
+		$progressMessage->success('Successfully computed for 1 second');
+
+		// Error
+		$progressMessage = $this->progressMessage->verbose('Computing..');
+		usleep(1000000);
+		$progressMessage->error();
+
+		$progressMessage = $this->progressMessage->verbose('Computing..');
+		usleep(1000000);
+		$progressMessage->error('Could not compute');
+
+		// Message
+		$progressMessage = $this->progressMessage->verbose('Computing..');
+		usleep(1000000);
+		$progressMessage->message('Found odd record');
+
+		// Chained
+		$progressMessage = $this->progressMessage->verbose('Computing..');
+		usleep(1000000);
+		$progressMessage->message('Searching..');
+		usleep(1000000);
+		$progressMessage->message('Calculating..');
+		usleep(1000000);
+		$progressMessage->success();
+	}
 }
 
 CLImaxTestApplication::launch();

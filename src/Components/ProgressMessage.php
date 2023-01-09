@@ -30,33 +30,84 @@ class ProgressMessage {
 		$this->prependText = $prependText;
 		$this->printTime = $printTime;
 
-		$this->printStartMessage($output);
+		$this->printAffix($output);
 	}
 
+	/**
+	 * @param string $message
+	 *
+	 * @return $this
+	 */
+	public function message($message, $colour = DebugColour::LIGHT_CYAN) {
+		return $this->printSuffix(null, null, $message, $colour);
+	}
+
+
+	/**
+	 * @param string $message
+	 *
+	 * @return $this
+	 */
 	public function success($message = null) {
-		$this->printEndMessage($message, '✔', 'Success', $message, DebugColour::LIGHT_GREEN);
+		return $this->printSuffix('✔', 'Success', $message, DebugColour::LIGHT_GREEN);
 	}
 
+	/**
+	 * @param string $message
+	 *
+	 * @return $this
+	 */
 	public function error($message = null) {
-		$this->printEndMessage($message, '✖', 'Error', $message, DebugColour::LIGHT_RED);
+		return $this->printSuffix('✖', 'Error', $message, DebugColour::LIGHT_RED);
 	}
 
-	private function printStartMessage($startMessage) {
+	/**
+	 * @param string $startMessage
+	 *
+	 * @return void
+	 */
+	private function printAffix($startMessage) {
+		$this->application->checkScheduledNewline();
+
 		$this->application->printText($this->debugLevel, $startMessage, $this->colour, $this->backgroundColour, $this->prependText, $this->printTime);
+		$this->application->scheduleNewline();
 	}
 
-	private function printEndMessage($endMessage, $utf8Icon, $defaultMessage, $extraMessage, $colour) {
+	/**
+	 * @param string $utf8Icon
+	 * @param string $defaultMessage
+	 * @param string $message
+	 * @param int $colour
+	 *
+	 * @return $this
+	 */
+	private function printSuffix($utf8Icon, $defaultMessage, $message, $colour) {
 		if ($this->application->isUtf8() && !empty($utf8Icon)) {
-			$endMessage = $utf8Icon . (!empty($endMessage) ? ' ' . $endMessage : '');
-		} else if (!empty($endMessage)) {
-			$endMessage = $defaultMessage . ' - ' . $endMessage;
+			$intro          = $utf8Icon;
+			$introSeparator = ' ';
+		} else if (!empty($defaultMessage)) {
+			$intro = $defaultMessage;
+			$introSeparator = ' ';
 		} else {
-			$endMessage = $defaultMessage;
+			$intro = '';
+			$introSeparator = '';
 		}
 
-		$endMessage = DebugColour::enclose(' ' . $endMessage, $colour);
+		$endMessage = $message;
+
+		if (!empty($intro)) {
+			$endMessage = $intro . $introSeparator . $endMessage;
+		}
+
+		if (!empty($endMessage)) {
+			$endMessage = DebugColour::enclose(' ' . $endMessage, $colour);
+		} else {
+			return $this; // Not printing anything
+		}
 
 		$this->application->printText($this->debugLevel, $endMessage, $this->colour, $this->backgroundColour, null, false);
-		$this->application->newLine();
+		$this->application->scheduleNewline();
+
+		return $this;
 	}
 }

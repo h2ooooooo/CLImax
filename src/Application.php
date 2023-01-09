@@ -145,6 +145,8 @@ abstract class Application
         'componentFactory' => 'ComponentFactory',
     );
 
+	protected $scheduleNewline = false;
+
     /**
      * The constructor - parses arguments and saves the starting
      * time of the script so we can check how long the entire
@@ -347,6 +349,8 @@ abstract class Application
         $printTime = null
     )
     {
+		$this->checkScheduledNewline();
+
         $this->printText($debugLevel, $output, $colour, $backgroundColour, $prependText,
             $printTime !== null ? $printTime : $this->justPrintedLine);
 
@@ -637,6 +641,8 @@ abstract class Application
 
         $messageLine = str_pad(($addBrackets ? '[' . $message . ']' : $message), $size, $padString,
             STR_PAD_BOTH);
+
+	    $this->checkScheduledNewline();
 
         if ($padTopBottom) {
             $padLine = str_repeat($padString, $size);
@@ -1483,4 +1489,24 @@ abstract class Application
     {
         $plugin->register($this);
     }
+
+	/**
+	 * @param bool $scheduleNewline
+	 *
+	 * @return void
+	 */
+	public function scheduleNewline($scheduleNewline = true) {
+		$this->scheduleNewline = $scheduleNewline;
+	}
+
+	/**
+	 * @return void
+	 */
+	public function checkScheduledNewline() {
+		if ($this->scheduleNewline) {
+			$this->newLine();
+
+			$this->scheduleNewline = false;
+		}
+	}
 }

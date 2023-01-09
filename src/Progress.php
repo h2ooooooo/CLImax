@@ -103,6 +103,8 @@ class Progress extends Module
 
         $output = $prepend . $progressBar . $append;
 
+	    $this->application->checkScheduledNewline();
+
         $this->application->printText($this->debugLevel, $output, $this->textColour, $this->backgroundColour,
             false, $this->showClock);
 

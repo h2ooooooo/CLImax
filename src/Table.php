@@ -613,6 +613,8 @@ class Table extends Module {
     ) {
         $output = $this->toString();
 
+	    $this->application->checkScheduledNewline();
+
         $this->application->printText($debugLevel, $output, $colour, $backgroundColour, null,
             false);
 
