@@ -234,7 +234,7 @@ abstract class Application
             return false;
         }
 
-        $this->environment = new $environmentClass($this);
+        $this->moduleInstances['environment'] = new $environmentClass($this);
 
         return true;
     }
